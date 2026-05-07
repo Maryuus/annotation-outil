@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Annotateur — Accueil</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+<div id="acc-header">
+  <span id="acc-title">🎬 Annotateur</span>
+  <div id="acc-folder-bar">
+    <span id="acc-dossier-actuel"></span>
+    <button id="btn-fermer" title="Fermer le projet" style="display:none">✕</button>
+    <button id="btn-ouvrir" class="btn btn-accent">📂 Ouvrir un dossier</button>
+  </div>
+</div>
+
+<div id="acc-main">
+
+  <div class="acc-section" id="sec-videos">
+    <div class="acc-section-header" id="toggle-videos">
+      <span class="acc-section-icon">🎬</span>
+      <span class="acc-section-title">Vidéos</span>
+      <span class="acc-section-count" id="count-videos">0</span>
+      <span class="acc-section-arrow">▾</span>
+    </div>
+    <div class="acc-section-body" id="video-list"></div>
+  </div>
+
+  <div class="acc-section" id="sec-audios">
+    <div class="acc-section-header" id="toggle-audios">
+      <span class="acc-section-icon">🎵</span>
+      <span class="acc-section-title">Musiques</span>
+      <span class="acc-section-count" id="count-audios">0</span>
+      <span class="acc-section-arrow">▾</span>
+    </div>
+    <div class="acc-section-body" id="audio-list"></div>
+  </div>
+
+  <div id="acc-empty">
+    <div class="acc-empty-icon">📂</div>
+    <p>Ouvrez un dossier contenant vos vidéos et musiques.</p>
+  </div>
+
+</div>
+
+<script src="/static/js/accueil.js"></script>
+</body>
+</html>

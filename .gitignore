@@ -1,0 +1,60 @@
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+pip-wheel-metadata/
+
+# ── Environnements virtuels ───────────────────────────────────────────────────
+venv/
+env/
+.venv/
+.env/
+
+# ── Fichiers de travail (vidéos, images, audios uploadés) ─────────────────────
+# On ne versionne pas les médias personnels, seulement le code
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.wmv
+*.flv
+*.webm
+*.m4v
+*.mp3
+*.wav
+*.flac
+*.aac
+*.ogg
+*.m4a
+*.wma
+*.opus
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.bmp
+*.tiff
+# Miniatures générées automatiquement (.nom_thumb.jpg)
+.*_thumb.jpg
+
+# ── Exports JSON générés par l'appli ─────────────────────────────────────────
+# (fichiers *_export_*.json et *_beats_*.json créés à côté des vidéos/audios)
+*_export_*.json
+*_beats_*.json
+
+# ── Dossier docs (rapport, documents) ────────────────────────────────────────
+docs/
+
+# ── Config Claude Code (locale, spécifique à la machine) ─────────────────────
+.claude/
+
+# ── Divers ────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.log

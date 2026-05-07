@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Annotateur de frames</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="annotateur">
+
+<!-- ═══════════════════ TOOLBAR ═══════════════════ -->
+<div id="toolbar">
+  <a href="/" class="btn btn-ghost" title="Retour à l'accueil">← Accueil</a>
+  <div class="vsep"></div>
+  <div id="video-info">Aucune vidéo chargée</div>
+
+  <div class="vsep"></div>
+  <button class="btn btn-ghost" id="btn-reset"  disabled title="Effacer toutes les annotations">↺ Reset</button>
+  <input type="text" id="input-nom-export" placeholder="Nom de l'export…" title="Nom donné à l'export JSON (facultatif)" autocomplete="off">
+  <button class="btn btn-ghost" id="btn-export" disabled title="Exporter les annotations en JSON">⬇ Exporter JSON</button>
+  <label class="btn-label" title="Importer un fichier JSON d'annotations">
+    ⬆ Importer JSON
+    <input type="file" id="input-file-json" accept=".json">
+  </label>
+  <button class="btn btn-ghost" id="btn-help" title="Raccourcis clavier (?)">?</button>
+</div>
+
+<!-- ═══════════════════ CTRLBAR ═══════════════════ -->
+<div id="ctrlbar">
+  <span class="ctrl-label">Vitesse</span>
+  <select id="speed-select" disabled title="Vitesse de lecture">
+    <option value="0.25">×0.25</option>
+    <option value="0.5">×0.5</option>
+    <option value="0.75">×0.75</option>
+    <option value="1" selected>×1</option>
+    <option value="1.25">×1.25</option>
+    <option value="1.5">×1.5</option>
+    <option value="1.75">×1.75</option>
+    <option value="2">×2</option>
+  </select>
+
+  <div class="vsep"></div>
+  <span class="ctrl-label">Affichage</span>
+  <button class="btn btn-ghost btn-mode active" id="mode-btn-5" title="5 frames (±2)">±2</button>
+  <button class="btn btn-ghost btn-mode"        id="mode-btn-3" title="3 frames (±1)">±1</button>
+  <button class="btn btn-ghost btn-mode"        id="mode-btn-1" title="Plein écran">□</button>
+
+  <div class="vsep"></div>
+  <span class="ctrl-label">Volume</span>
+  <span class="ctrl-icon" id="vol-icon" title="Couper / rétablir le son (M)">🔊</span>
+  <input type="range" id="vol-slider" min="0" max="1" step="0.05" value="1" title="Volume · M pour couper/rétablir">
+  <span class="ctrl-label" id="vol-pct">100 %</span>
+
+  <div class="vsep"></div>
+  <span class="ctrl-label">Clic annotations</span>
+  <label class="ctrl-toggle" title="Son de clic quand on passe sur une annotation">
+    <input type="checkbox" id="chk-click" checked>
+    <span class="ctrl-toggle-knob"></span>
+  </label>
+</div>
+
+<!-- ═══════════════════ MAIN ═══════════════════ -->
+<div id="main">
+
+  <div id="filmstrip">
+    <div class="vig vig-sm" id="vig-m2">
+      <div class="vig-head"><span class="vig-offset">−2</span><span class="vig-dot"></span></div>
+      <div class="vig-img-wrap" id="wrap-m2"><span class="placeholder">—</span><img id="img-m2" src="" alt=""></div>
+    </div>
+
+    <div class="vig vig-md" id="vig-m1">
+      <div class="vig-head"><span class="vig-offset">−1</span><span class="vig-dot"></span></div>
+      <div class="vig-img-wrap" id="wrap-m1"><span class="placeholder">—</span><img id="img-m1" src="" alt=""></div>
+    </div>
+
+    <div class="vig vig-center" id="vig-0">
+      <div class="vig-head">
+        <span class="vig-offset" id="label-center">Aucune vidéo chargée</span>
+        <span class="vig-dot"></span>
+      </div>
+      <div class="vig-img-wrap" id="wrap-0">
+        <span class="placeholder" id="ph-center">Chargez une vidéo</span>
+        <img id="img-0" src="" alt="">
+        <video id="video-player" preload="none"></video>
+        <div id="ann-flash"></div>
+      </div>
+    </div>
+
+    <div class="vig vig-md" id="vig-p1">
+      <div class="vig-head"><span class="vig-offset">+1</span><span class="vig-dot"></span></div>
+      <div class="vig-img-wrap" id="wrap-p1"><span class="placeholder">—</span><img id="img-p1" src="" alt=""></div>
+    </div>
+
+    <div class="vig vig-sm" id="vig-p2">
+      <div class="vig-head"><span class="vig-offset">+2</span><span class="vig-dot"></span></div>
+      <div class="vig-img-wrap" id="wrap-p2"><span class="placeholder">—</span><img id="img-p2" src="" alt=""></div>
+    </div>
+  </div>
+
+  <div id="nav">
+    <div id="slider-wrap">
+      <div id="markers"></div>
+      <input type="range" id="slider" min="0" value="0" disabled>
+    </div>
+
+    <div id="nav-info">
+      <span id="lbl-frame">— / —</span>
+      <span id="lbl-time">0.000 s</span>
+      <span class="badge-on" id="badge-on">annotée</span>
+      <div id="goto">
+        <label for="inp-goto">Aller à</label>
+        <input type="number" id="inp-goto" min="0" placeholder="N°">
+      </div>
+    </div>
+
+    <div id="nav-btns">
+      <button class="btn btn-accent" id="btn-play"     disabled title="Lecture / Pause (Espace · P)">▶</button>
+      <button class="btn btn-ghost"  id="btn-ann-prev" disabled title="Annotation précédente (↑)">⏮</button>
+      <button class="btn btn-ghost"  id="btn-ann-next" disabled title="Annotation suivante (↓)">⏭</button>
+      <div class="vsep" style="height:20px"></div>
+      <button class="btn btn-ghost" id="btn-mn" disabled title="Reculer de N frames (Ctrl+←)">−10</button>
+      <button class="btn btn-ghost" id="btn-m1" disabled title="Frame précédente (←)">◄ −1</button>
+      <input type="text" id="input-label" placeholder="Étiquette (optionnelle)" title="Appuyer sur A ou Entrée pour annoter">
+      <button class="btn btn-accent" id="btn-ann" disabled data-action="annoter" title="Annoter / Retirer (A · Entrée)">✓ Annoter</button>
+      <button class="btn btn-ghost"  id="btn-p1" disabled title="Frame suivante (→)">+1 ►</button>
+      <button class="btn btn-ghost"  id="btn-pn" disabled title="Avancer de N frames (Ctrl+→)">+10</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══════════════════ SIDEBAR ═══════════════════ -->
+<div id="sidebar">
+  <div id="sidebar-head">
+    <h2>Annotations</h2>
+    <span id="ann-count">0</span>
+    <button id="lissage-btn" class="btn btn-ghost" title="Lissage gaussien des annotations entre deux points (cliquez deux annotations dans la liste)">✂ Lisser</button>
+    <select id="lissage-largeur" title="Nombre de points pris en compte pour le lissage">
+      <option value="1">3 pts</option>
+      <option value="2">5 pts</option>
+      <option value="3">7 pts</option>
+    </select>
+  </div>
+  <div id="lissage-hint-bar">
+    <span id="lissage-hint"></span>
+  </div>
+
+  <div id="bulk-panel">
+    <div id="bulk-toggle">
+      <span>Annotation en lot</span>
+      <span id="bulk-chevron">▸</span>
+    </div>
+    <div id="bulk-form">
+      <div id="bulk-mode-row">
+        <span class="bulk-mode-opt" id="bm-frame">Frame</span>
+        <label class="ctrl-toggle" title="Basculer frame ↔ secondes">
+          <input type="checkbox" id="bulk-mode-chk">
+          <span class="ctrl-toggle-knob"></span>
+        </label>
+        <span class="bulk-mode-opt" id="bm-time">Secondes</span>
+      </div>
+      <div class="bulk-row">
+        <div class="bulk-field">
+          <label id="lbl-bulk-start">Début (frame)</label>
+          <input id="bulk-start" type="number" min="0" placeholder="0">
+        </div>
+        <div class="bulk-field">
+          <label id="lbl-bulk-end">Fin (frame)</label>
+          <input id="bulk-end" type="number" min="0" placeholder="100">
+        </div>
+      </div>
+      <div class="bulk-row">
+        <div class="bulk-field">
+          <label>Nb d'étiquettes</label>
+          <input id="bulk-count" type="number" min="1" value="4">
+        </div>
+        <div class="bulk-field">
+          <label>Étiquette</label>
+          <input id="bulk-label" type="text" placeholder="ex: action">
+        </div>
+      </div>
+      <div id="bulk-hint"></div>
+      <button id="bulk-btn" class="btn btn-accent">Générer les annotations</button>
+    </div>
+  </div>
+
+  <div id="ann-list">
+    <div class="empty">
+      <div class="empty-icon">🎬</div>
+      Ouvrez une vidéo<br>pour commencer
+    </div>
+  </div>
+
+  <div id="sidebar-foot">
+    <div id="step-info">Pas de saut : 10 frames</div>
+  </div>
+</div>
+
+<!-- ═══════════════════ MODAL RACCOURCIS ═══════════════════ -->
+<div id="help-overlay" class="hidden">
+  <div id="help-panel">
+    <div id="help-head">
+      <span>Raccourcis clavier</span>
+      <button id="help-close">✕</button>
+    </div>
+    <div id="help-body">
+      <table id="help-table">
+        <tbody>
+          <tr><th colspan="2">Navigation</th></tr>
+          <tr><td><kbd>←</kbd> / <kbd>→</kbd></td><td>Frame précédente / suivante</td></tr>
+          <tr><td><kbd>Ctrl</kbd>+<kbd>←/→</kbd></td><td>Saut de N frames</td></tr>
+          <tr><td><kbd>Shift</kbd>+<kbd>←/→</kbd></td><td>Décaler l'annotation d'une frame</td></tr>
+          <tr><td><kbd>↑</kbd> / <kbd>↓</kbd></td><td>Annotation précédente / suivante</td></tr>
+          <tr><th colspan="2">Lecture</th></tr>
+          <tr><td><kbd>Espace</kbd> / <kbd>P</kbd></td><td>Lecture / Pause</td></tr>
+          <tr><td><kbd>Esc</kbd></td><td>Retour à l'accueil</td></tr>
+          <tr><td><kbd>M</kbd></td><td>Couper / rétablir le son</td></tr>
+          <tr><td><kbd>←</kbd> / <kbd>→</kbd> <em>(lecture)</em></td><td>±1 frame</td></tr>
+          <tr><th colspan="2">Annotations</th></tr>
+          <tr><td><kbd>A</kbd> / <kbd>Entrée</kbd></td><td>Annoter / retirer la frame courante</td></tr>
+          <tr><td><kbd>A</kbd> / <kbd>Entrée</kbd> <em>(lecture)</em></td><td>Annoter le timecode courant</td></tr>
+          <tr><td><kbd>Suppr</kbd></td><td>Supprimer l'annotation courante</td></tr>
+          <tr><td>Double-clic sur étiquette</td><td>Éditer l'étiquette en place</td></tr>
+          <tr><th colspan="2">Divers</th></tr>
+          <tr><td><kbd>?</kbd></td><td>Afficher / masquer cette aide</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script src="/static/js/ui.js"></script>
+<script src="/static/js/player.js"></script>
+<script src="/static/js/annotations.js"></script>
+<script src="/static/js/main.js"></script>
+</body>
+</html>

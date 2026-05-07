@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Annotateur audio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="annotateur-audio">
+
+<!-- ═══════════════════ TOOLBAR ═══════════════════ -->
+<div id="aud-toolbar">
+  <a href="/" class="btn btn-ghost" title="Retour à l'accueil">← Accueil</a>
+  <div class="vsep"></div>
+  <div id="aud-info">Aucun fichier audio chargé</div>
+  <div class="vsep"></div>
+  <span id="aud-bpm-display" class="aud-bpm-badge"></span>
+  <div class="vsep"></div>
+  <input type="text" id="aud-input-nom-export" placeholder="Nom de l'export…" autocomplete="off" title="Nom donné à l'export JSON (facultatif)">
+  <button class="btn btn-ghost" id="aud-btn-export" disabled title="Exporter les beats en JSON (Ctrl+S)">⬇ Exporter JSON</button>
+  <button class="btn btn-ghost" id="aud-btn-reset"  disabled title="Effacer tous les beats">↺ Reset</button>
+  <button class="btn btn-ghost" id="aud-btn-help"   title="Raccourcis clavier (?)">?</button>
+</div>
+
+<!-- ═══════════════════ MAIN ═══════════════════ -->
+<div id="aud-main">
+
+  <!-- Élément audio (caché, contrôlé par JS) -->
+  <audio id="audio-player" src="/audio/stream" preload="auto"></audio>
+
+  <!-- Zone de visualisation -->
+  <div id="aud-viz">
+    <div id="aud-viz-inner">
+      <div id="aud-time-display">
+        <span id="aud-cur-time">0:00.000</span>
+        <span id="aud-sep"> / </span>
+        <span id="aud-total-time">0:00.000</span>
+      </div>
+      <div id="aud-viz-bars">
+        <div class="aud-bar"></div>
+        <div class="aud-bar"></div>
+        <div class="aud-bar"></div>
+        <div class="aud-bar"></div>
+        <div class="aud-bar"></div>
+        <div class="aud-bar"></div>
+        <div class="aud-bar"></div>
+        <div class="aud-bar"></div>
+        <div class="aud-bar"></div>
+        <div class="aud-bar"></div>
+      </div>
+      <div id="aud-ann-flash"></div>
+    </div>
+  </div>
+
+  <!-- Navigation -->
+  <div id="aud-nav">
+    <div id="aud-slider-wrap">
+      <div id="aud-markers"></div>
+      <input type="range" id="aud-slider" min="0" max="10000" value="0" step="1" disabled>
+    </div>
+
+    <div id="aud-nav-btns">
+      <button class="btn btn-accent" id="aud-btn-play"      disabled title="Lecture / Pause (Espace · P)">▶</button>
+      <button class="btn btn-ghost"  id="aud-btn-prev-beat" disabled title="Beat précédent (↓)">⏮</button>
+      <button class="btn btn-ghost"  id="aud-btn-next-beat" disabled title="Beat suivant (↑)">⏭</button>
+      <div class="vsep" style="height:20px"></div>
+      <select id="aud-speed-select" disabled title="Vitesse de lecture">
+        <option value="0.5">×0.5</option>
+        <option value="0.75">×0.75</option>
+        <option value="1" selected>×1</option>
+        <option value="1.25">×1.25</option>
+        <option value="1.5">×1.5</option>
+        <option value="2">×2</option>
+      </select>
+      <div class="vsep" style="height:20px"></div>
+      <input type="text" id="aud-input-label" placeholder="Étiquette (optionnelle)" autocomplete="off"
+             title="Étiquette pour le prochain beat — Entrée pour marquer">
+      <button class="btn btn-accent" id="aud-btn-ann"    disabled title="Marquer un beat (A · Entrée)">🎵 Marquer beat</button>
+      <button class="btn btn-ghost"  id="aud-btn-detect" disabled title="Détection automatique des beats via librosa">⚡ Détecter auto</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══════════════════ SIDEBAR ═══════════════════ -->
+<div id="aud-sidebar">
+  <div id="aud-sidebar-head">
+    <h2>Beats</h2>
+    <span id="aud-beat-count">0</span>
+    <span id="aud-bpm-info" class="aud-bpm-small"></span>
+    <button class="btn btn-ghost" id="aud-btn-completer" disabled
+            title="Extrapoler les beats jusqu'à la fin de la piste (basé sur l'intervalle moyen)">⟳ Compléter</button>
+  </div>
+
+  <!-- Panel : ajouter en lot + compléter -->
+  <div id="aud-bulk-panel">
+    <div id="aud-bulk-toggle">
+      <span>✦ Ajouter en lot</span>
+      <span id="aud-bulk-arrow">▾</span>
+    </div>
+    <div id="aud-bulk-form" class="hidden">
+      <div class="bulk-row">
+        <label for="aud-bulk-debut">Début (s)</label>
+        <input type="number" id="aud-bulk-debut" min="0" step="0.001" placeholder="0">
+      </div>
+      <div class="bulk-row">
+        <label for="aud-bulk-fin">Fin (s)</label>
+        <input type="number" id="aud-bulk-fin" min="0" step="0.001" placeholder="fin">
+      </div>
+      <div class="bulk-row">
+        <label for="aud-bulk-nb">Nombre</label>
+        <input type="number" id="aud-bulk-nb" min="2" max="9999" step="1" value="8">
+      </div>
+      <div class="bulk-row">
+        <label for="aud-bulk-lbl">Étiquette</label>
+        <input type="text" id="aud-bulk-lbl" placeholder="(optionnelle)">
+      </div>
+      <div id="aud-bulk-hint"></div>
+      <div class="bulk-actions">
+        <button class="btn btn-accent" id="aud-btn-lot" disabled>Ajouter</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="aud-beat-list">
+    <div class="empty">
+      <div class="empty-icon">🎵</div>
+      Aucun beat<br>Appuyez sur <kbd>A</kbd> pendant la lecture
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ MODAL RACCOURCIS ═══════════════════ -->
+<div id="aud-help-overlay" class="hidden">
+  <div id="help-panel">
+    <div id="help-head">
+      <span>Raccourcis clavier</span>
+      <button id="aud-help-close">✕</button>
+    </div>
+    <div id="help-body">
+      <table id="help-table">
+        <tbody>
+          <tr><th colspan="2">Lecture</th></tr>
+          <tr><td><kbd>Espace</kbd> / <kbd>P</kbd></td><td>Lecture / Pause</td></tr>
+          <tr><td><kbd>←</kbd> / <kbd>→</kbd></td><td>Reculer / avancer de 5 secondes</td></tr>
+          <tr><td><kbd>Shift</kbd>+<kbd>←/→</kbd></td><td>Reculer / avancer de 1 seconde</td></tr>
+          <tr><td><kbd>M</kbd></td><td>Couper / rétablir le son</td></tr>
+          <tr><td><kbd>Esc</kbd></td><td>Retour à l'accueil</td></tr>
+          <tr><th colspan="2">Beats</th></tr>
+          <tr><td><kbd>A</kbd> / <kbd>Entrée</kbd></td><td>Marquer / retirer un beat</td></tr>
+          <tr><td><kbd>↑</kbd> / <kbd>↓</kbd></td><td>Beat suivant / précédent</td></tr>
+          <tr><td><kbd>Suppr</kbd></td><td>Supprimer le beat le plus proche</td></tr>
+          <tr><th colspan="2">Export</th></tr>
+          <tr><td><kbd>Ctrl</kbd>+<kbd>S</kbd></td><td>Exporter les beats en JSON</td></tr>
+          <tr><th colspan="2">Divers</th></tr>
+          <tr><td><kbd>?</kbd></td><td>Afficher / masquer cette aide</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script src="/static/js/audio.js"></script>
+</body>
+</html>
