@@ -1,14 +1,10 @@
-"""
-Gestion des beats d'une piste audio.
-Miroir de annotations.py pour la partie musicale.
-"""
+
 
 import wave
 
 
-# ---------------------------------------------------------------------------
 # Utilitaire — durée audio (lecture d'en-tête uniquement, sans décoder)
-# ---------------------------------------------------------------------------
+
 
 def get_audio_duration(chemin):
     """Retourne la durée en secondes sans charger le signal audio."""
@@ -46,9 +42,8 @@ def get_audio_duration(chemin):
     return None
 
 
-# ---------------------------------------------------------------------------
+
 # Utilitaire — construction d'un beat normalisé
-# ---------------------------------------------------------------------------
 
 def construire_beat(temps_ms, etiquette=''):
     """Crée un dict beat avec les trois champs attendus par le front-end."""
@@ -60,9 +55,8 @@ def construire_beat(temps_ms, etiquette=''):
     }
 
 
-# ---------------------------------------------------------------------------
+
 # Gestionnaire de beats (classe, miroir de GestionnaireAnnotations)
-# ---------------------------------------------------------------------------
 
 class GestionnaireBeat:
     """Gère la liste des beats d'une piste audio en mémoire."""
@@ -70,7 +64,7 @@ class GestionnaireBeat:
     def __init__(self):
         self.beats = []
 
-    # -- Opérations de base ------------------------------------------------
+    # Opérations de base
 
     def ajouter(self, temps_ms, etiquette=''):
         """
@@ -103,7 +97,7 @@ class GestionnaireBeat:
         """Supprime tous les beats."""
         self.beats.clear()
 
-    # -- Opérations en lot -------------------------------------------------
+    # -- Opérations en lot 
 
     def ajouter_lot(self, debut_ms, fin_ms, nb, etiquette=''):
         """
@@ -156,7 +150,7 @@ class GestionnaireBeat:
             ))
         self._trier()
 
-    # -- Métriques ---------------------------------------------------------
+    # -- Métriques 
 
     def get_bpm(self):
         """BPM moyen calculé depuis les intervalles. Retourne None si < 2 beats."""
@@ -169,7 +163,7 @@ class GestionnaireBeat:
         avg = sum(intervals) / len(intervals)
         return round(60000 / avg, 1) if avg > 0 else None
 
-    # -- Interne -----------------------------------------------------------
+    # -- Interne 
 
     def _trier(self):
         self.beats.sort(key=lambda b: b["temps_ms"])

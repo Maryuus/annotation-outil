@@ -2,3 +2,6 @@ flask
 librosa
 numpy
 opencv-python
+soundfile
+audioread
+moviepy
