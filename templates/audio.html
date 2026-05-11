@@ -74,6 +74,9 @@
         <option value="2">×2</option>
       </select>
       <div class="vsep" style="height:20px"></div>
+      <button class="btn btn-ghost" id="aud-btn-mute" title="Couper / rétablir le son (M)">🔊</button>
+      <input type="range" id="aud-vol-slider" min="0" max="100" value="80" step="1" title="Volume">
+      <div class="vsep" style="height:20px"></div>
       <input type="text" id="aud-input-label" placeholder="Étiquette (optionnelle)" autocomplete="off"
              title="Étiquette pour le prochain beat — Entrée pour marquer">
       <button class="btn btn-accent" id="aud-btn-ann"    disabled title="Marquer un beat (A · Entrée)">🎵 Marquer beat</button>
@@ -146,6 +149,7 @@
           <tr><td><kbd>←</kbd> / <kbd>→</kbd></td><td>Reculer / avancer de 5 secondes</td></tr>
           <tr><td><kbd>Shift</kbd>+<kbd>←/→</kbd></td><td>Reculer / avancer de 1 seconde</td></tr>
           <tr><td><kbd>M</kbd></td><td>Couper / rétablir le son</td></tr>
+          <tr><td><kbd>+</kbd> / <kbd>-</kbd></td><td>Volume +10% / -10%</td></tr>
           <tr><td><kbd>Esc</kbd></td><td>Retour à l'accueil</td></tr>
           <tr><th colspan="2">Beats</th></tr>
           <tr><td><kbd>A</kbd> / <kbd>Entrée</kbd></td><td>Marquer / retirer un beat</td></tr>

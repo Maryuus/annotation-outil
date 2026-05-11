@@ -404,6 +404,22 @@ function togglePlay() {
 
 function toggleMute() {
   audioEl.muted = !audioEl.muted;
+  majVolIcon();
+}
+
+function majVolIcon() {
+  const btn = document.getElementById('aud-btn-mute');
+  if (!btn) return;
+  if (audioEl.muted || audioEl.volume === 0) btn.textContent = '🔇';
+  else if (audioEl.volume < 0.4)             btn.textContent = '🔉';
+  else                                        btn.textContent = '🔊';
+}
+
+function setVolume(v) {
+  audioEl.volume = Math.max(0, Math.min(1, v));
+  if (audioEl.muted && audioEl.volume > 0) audioEl.muted = false;
+  document.getElementById('aud-vol-slider').value = Math.round(audioEl.volume * 100);
+  majVolIcon();
 }
 
 function majBtnPlay() {
@@ -505,6 +521,11 @@ document.getElementById('aud-btn-completer').addEventListener('click', completer
 
 // ─── Boutons ──────────────────────────────────────────────────────────────────
 
+document.getElementById('aud-btn-mute').addEventListener('click', toggleMute);
+document.getElementById('aud-vol-slider').addEventListener('input', function () {
+  setVolume(parseInt(this.value, 10) / 100);
+});
+
 document.getElementById('aud-btn-play').addEventListener('click', togglePlay);
 document.getElementById('aud-btn-ann').addEventListener('click', marquerBeat);
 document.getElementById('aud-btn-detect').addEventListener('click', detecterAuto);
@@ -566,6 +587,12 @@ document.addEventListener('keydown', e => {
     case 'm': case 'M':
       e.preventDefault(); toggleMute(); return;
 
+    case '+': case '=':
+      e.preventDefault(); setVolume(audioEl.volume + 0.1); return;
+
+    case '-': case '_':
+      e.preventDefault(); setVolume(audioEl.volume - 0.1); return;
+
     case 'Escape':
       e.preventDefault(); window.location.href = '/'; return;
 
@@ -595,6 +622,9 @@ document.getElementById('aud-help-overlay').addEventListener('click', e => {
 });
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
+
+audioEl.volume = 0.8;
+majVolIcon();
 
 async function initDepuisServeur() {
   try {

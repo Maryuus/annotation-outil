@@ -1338,6 +1338,26 @@ body.playing .aud-bar:nth-child(10) { animation: eq-bar .58s ease-in-out infinit
 }
 #aud-speed-select:disabled { opacity: .3; pointer-events: none; }
 
+#aud-vol-slider {
+  width: 80px;
+  -webkit-appearance: none;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--raised);
+  outline: none;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+#aud-vol-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 13px; height: 13px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  transition: transform .1s;
+}
+#aud-vol-slider::-webkit-slider-thumb:hover { transform: scale(1.3); }
+
 #aud-input-label {
   flex: 1;
   background: var(--raised);
