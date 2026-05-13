@@ -346,7 +346,9 @@ def stream_video():
 def get_infos():
     if not infos_video:
         return jsonify({"erreur": "aucune vidéo chargée"}), 404
-    return jsonify({**infos_video, "nom_export": nom_export_ouvert}), 200
+    resp = jsonify({**infos_video, "nom_export": nom_export_ouvert})
+    resp.headers["Cache-Control"] = "no-cache, no-store"
+    return resp, 200
 
 
 # ---------------------------------------------------------------------------
@@ -932,11 +934,7 @@ def restaurer_export():
         except Exception as e:
             return jsonify({"erreur": f"JSON invalide : {e}"}), 422
 
-    gestionnaire.vider()
-    for ann in donnees.get("annotations", []):
-        frame = ann["frame"]
-        temps = ann.get("temps_secondes", ann.get("temps", 0))
-        gestionnaire.ajouter(frame, temps, ann.get("etiquette", ""))
+    gestionnaire.charger_depuis_json(donnees.get("annotations", []))
 
     # Pré-remplit le nom dans l'annotateur
     nom_export_ouvert = donnees.get("nom") or ""
@@ -955,12 +953,7 @@ def importer_annotations():
     except Exception as e:
         return jsonify({"erreur": f"JSON invalide : {e}"}), 422
 
-    gestionnaire.vider()
-    for ann in donnees.get("annotations", []):
-        frame = ann["frame"]
-        temps = ann.get("temps_secondes", ann.get("temps", 0))
-        gestionnaire.ajouter(frame, temps, ann.get("etiquette", ""))
-
+    gestionnaire.charger_depuis_json(donnees.get("annotations", []))
     return jsonify({"importees": len(gestionnaire.annotations)}), 200
 
 

@@ -6,11 +6,13 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/css/style.css">
+  <script>(function(){document.documentElement.dataset.theme=localStorage.getItem('theme')||'dark';})()</script>
 </head>
 <body>
 
 <div id="acc-header">
   <span id="acc-title">🎬 Annotateur</span>
+  <button id="btn-theme" title="Passer en thème clair">☀️</button>
   <div id="acc-folder-bar">
     <span id="acc-dossier-actuel"></span>
     <button id="btn-fermer" title="Fermer le projet" style="display:none">✕</button>
@@ -47,6 +49,7 @@
 
 </div>
 
+<script src="/static/js/theme.js"></script>
 <script src="/static/js/accueil.js"></script>
 </body>
 </html>

@@ -6,6 +6,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/css/style.css">
+  <script>(function(){document.documentElement.dataset.theme=localStorage.getItem('theme')||'dark';})()</script>
 </head>
 <body class="annotateur">
 
@@ -24,6 +25,7 @@
     <input type="file" id="input-file-json" accept=".json">
   </label>
   <button class="btn btn-ghost" id="btn-help" title="Raccourcis clavier (?)">?</button>
+  <button id="btn-theme" title="Passer en thème clair">☀️</button>
 </div>
 
 <!-- ═══════════════════ CTRLBAR ═══════════════════ -->
@@ -230,6 +232,7 @@
   </div>
 </div>
 
+<script src="/static/js/theme.js"></script>
 <script src="/static/js/ui.js"></script>
 <script src="/static/js/player.js"></script>
 <script src="/static/js/annotations.js"></script>

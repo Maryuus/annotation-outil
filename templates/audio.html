@@ -6,6 +6,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/css/style.css">
+  <script>(function(){document.documentElement.dataset.theme=localStorage.getItem('theme')||'dark';})()</script>
 </head>
 <body class="annotateur-audio">
 
@@ -21,6 +22,7 @@
   <button class="btn btn-ghost" id="aud-btn-export" disabled title="Exporter les beats en JSON (Ctrl+S)">⬇ Exporter JSON</button>
   <button class="btn btn-ghost" id="aud-btn-reset"  disabled title="Effacer tous les beats">↺ Reset</button>
   <button class="btn btn-ghost" id="aud-btn-help"   title="Raccourcis clavier (?)">?</button>
+  <button id="btn-theme" title="Passer en thème clair">☀️</button>
 </div>
 
 <!-- ═══════════════════ MAIN ═══════════════════ -->
@@ -165,6 +167,7 @@
   </div>
 </div>
 
+<script src="/static/js/theme.js"></script>
 <script src="/static/js/audio.js"></script>
 </body>
 </html>

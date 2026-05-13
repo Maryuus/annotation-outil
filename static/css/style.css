@@ -14,6 +14,25 @@
   --sans:      'DM Sans', sans-serif;
   --toolbar-h: 52px;
   --ctrlbar-h: 44px;
+  --active-bg:     #1e1610;
+  --active-border: #3d2a14;
+}
+
+/* ── Thème clair ── */
+html[data-theme="light"] {
+  --bg:        #f2f2f2;
+  --surface:   #ffffff;
+  --raised:    #ebebeb;
+  --border:    #e0e0e0;
+  --border2:   #d0d0d0;
+  --text:      #1a1a1a;
+  --muted:     #8a8a8a;
+  --dim:       #c0c0c0;
+  --accent:    #e8792a;
+  --accent2:   #c45e15;
+  --danger:    #c0392b;
+  --active-bg:     rgba(232, 121, 42, 0.1);
+  --active-border: rgba(232, 121, 42, 0.4);
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -828,7 +847,7 @@ body.annotateur {
   transition: background .1s;
 }
 .ann-item:hover  { background: var(--raised); }
-.ann-item.active { background: #1e1610; border-color: #3d2a14; }
+.ann-item.active { background: var(--active-bg); border-color: var(--active-border); }
 
 .ann-tc  { font-family: var(--mono); font-size: 10px; color: var(--accent); white-space: nowrap; }
 .ann-fr  { font-family: var(--mono); font-size: 10px; color: var(--dim); }
@@ -1439,7 +1458,7 @@ body.playing .aud-bar:nth-child(10) { animation: eq-bar .58s ease-in-out infinit
   transition: background .1s;
 }
 .beat-item:hover  { background: var(--raised); }
-.beat-item.active { background: #1e1610; border-color: #3d2a14; }
+.beat-item.active { background: var(--active-bg); border-color: var(--active-border); }
 
 .beat-tc {
   font-family: var(--mono);
@@ -1576,3 +1595,27 @@ body.playing .aud-bar:nth-child(10) { animation: eq-bar .58s ease-in-out infinit
   backdrop-filter: blur(2px);
 }
 #aud-help-overlay.hidden { display: none; }
+
+/* ══════════════════════════════════════════
+   BOUTON THÈME CLAIR / SOMBRE
+══════════════════════════════════════════ */
+#btn-theme {
+  background: transparent;
+  border: 1px solid var(--border2);
+  border-radius: 5px;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 14px;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: color .15s, border-color .15s, background .15s;
+}
+#btn-theme:hover {
+  color: var(--text);
+  border-color: var(--accent);
+  background: var(--raised);
+}

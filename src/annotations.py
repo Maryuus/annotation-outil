@@ -25,6 +25,17 @@ class GestionnaireAnnotations:
                 return True
         return False
 
+    def charger_depuis_json(self, liste):
+        """Remplace les annotations par celles lues depuis un export JSON.
+        Fait un seul tri final au lieu de trier à chaque insertion (O(N) au lieu de O(N²))."""
+        self.annotations.clear()
+        for ann in liste:
+            self.annotations.append({
+                "frame":          int(ann["frame"]),
+                "temps_secondes": float(ann.get("temps_secondes", ann.get("temps", 0))),
+                "etiquette":      str(ann.get("etiquette", "")).strip(),
+            })
+
     def get_pas(self):
         # écart entre les deux dernières annotations pour suggérer un pas
         if len(self.annotations) < 2:

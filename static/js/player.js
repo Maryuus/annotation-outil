@@ -5,29 +5,44 @@ let videoMode = false;
 let timerVid  = null;
 
 // ─── Audio clic ───────────────────────────────────────────────────────────
+// Fichier WAV statique préchargé. On clone le nœud à chaque lecture pour
+// permettre plusieurs clics superposés sans interruption.
 
-let audioCtx    = null;
-let clickBuffer = null;
-let muteAvant   = false;
-
-async function initAudio() {
-  if (audioCtx) return;
-  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  try {
-    const buf = await (await fetch('/audio/click')).arrayBuffer();
-    clickBuffer = await audioCtx.decodeAudioData(buf);
-  } catch (e) {
-    console.warn('Impossible de charger le son de clic :', e);
-  }
-}
+let muteAvant  = false;
+const clickAud = new Audio('/static/click.wav');
+clickAud.load();
 
 function jouerClick() {
-  if (!clickBuffer || !document.getElementById('chk-click').checked) return;
-  if (audioCtx.state === 'suspended') audioCtx.resume();
-  const src = audioCtx.createBufferSource();
-  src.buffer = clickBuffer;
-  src.connect(audioCtx.destination);
-  src.start();
+  if (!document.getElementById('chk-click').checked) return;
+  const c = clickAud.cloneNode();
+  c.volume = 0.7;
+  c.play().catch(() => {});
+}
+
+// ─── Planification des clics par setTimeout (précis à la frame) ──────────────
+// On calcule le délai réel jusqu'à chaque frame annotée et on programme un
+// setTimeout par annotation, plutôt que de détecter dans un setInterval.
+
+let _clickTimers = [];
+
+function planifierClics() {
+  annulerClics();
+  if (!state.anns.length || videoEl.paused) return;
+  const nowMs = videoEl.currentTime * 1000;
+  const taux  = videoEl.playbackRate || 1;
+  state.anns.forEach(ann => {
+    const frameMs      = (ann.frame / state.fps) * 1000;
+    const mediaRestant = frameMs - nowMs;
+    if (mediaRestant <= 0) return;
+    _clickTimers.push(setTimeout(() => {
+      if (!videoEl.paused) jouerClick();
+    }, mediaRestant / taux));
+  });
+}
+
+function annulerClics() {
+  _clickTimers.forEach(clearTimeout);
+  _clickTimers = [];
 }
 
 // ─── Volume ───────────────────────────────────────────────────────────────
@@ -80,7 +95,6 @@ function togglePlay() {
 
 function enterVideoMode() {
   videoMode = true;
-  initAudio();
   if (!videoEl.getAttribute('data-loaded')) {
     videoEl.src = `/video/stream?v=${state.videoSeed}`;
     videoEl.setAttribute('data-loaded', '1');
@@ -104,29 +118,20 @@ function enterVideoMode() {
     document.getElementById(id).classList.remove('annotee')
   );
 
-  let prevFrame   = state.cur;
-  let lastClickFr = -1;
-
+  // Mettre à jour le slider et les textes (sans détection de clic — géré par planifierClics)
   timerVid = setInterval(() => {
     if (videoEl.paused) return;
-    const newFrame = Math.round(videoEl.currentTime * state.fps);
-    if (newFrame !== prevFrame) {
-      const lo  = Math.min(prevFrame, newFrame);
-      const hi  = Math.max(prevFrame, newFrame);
-      const hit = state.anns.find(a => a.frame > lo && a.frame <= hi);
-      if (hit && hit.frame !== lastClickFr) {
-        jouerClick();
-        lastClickFr = hit.frame;
-      }
-      prevFrame = newFrame;
-    }
-    state.cur = newFrame;
+    state.cur = Math.round(videoEl.currentTime * state.fps);
     document.getElementById('slider').value = state.cur;
     majTextes();
   }, 50);
+
+  // Planifier les clics aux moments exacts des frames annotées
+  planifierClics();
 }
 
 function pauseVideo() {
+  annulerClics();
   clearInterval(timerVid);
   const framePause = Math.round(videoEl.currentTime * state.fps);
   videoEl.pause();
@@ -160,7 +165,10 @@ function pauseVideo() {
   mettreAJourCache();
 }
 
-videoEl.addEventListener('ended', pauseVideo);
+videoEl.addEventListener('ended',      pauseVideo);
+// Replanifier après un seek ou un changement de vitesse
+videoEl.addEventListener('seeked',     () => { if (!videoEl.paused) planifierClics(); });
+videoEl.addEventListener('ratechange', () => { if (!videoEl.paused) planifierClics(); });
 
 // ─── Annoter pendant la lecture ───────────────────────────────────────────
 
@@ -316,9 +324,6 @@ function _actualiserCache() {
 
   for (let i = Math.max(0, state.cur - 20); i <= Math.min(state.total - 1, state.cur + 20); i++)
     aGarder.add(i);
-  for (const ann of state.anns)
-    for (let i = Math.max(0, ann.frame - 5); i <= Math.min(state.total - 1, ann.frame + 5); i++)
-      aGarder.add(i);
 
   for (const [frame, img] of frameCache) {
     if (!aGarder.has(frame)) { img.src = ''; frameCache.delete(frame); }
