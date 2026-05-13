@@ -28,6 +28,7 @@ env/
 *.m4v
 *.mp3
 *.wav
+!static/click.wav
 *.flac
 *.aac
 *.ogg

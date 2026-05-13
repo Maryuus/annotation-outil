@@ -19,9 +19,9 @@
   <div class="vsep"></div>
   <button class="btn btn-ghost" id="btn-reset"  disabled title="Effacer toutes les annotations">↺ Reset</button>
   <input type="text" id="input-nom-export" placeholder="Nom de l'export…" title="Nom donné à l'export JSON (facultatif)" autocomplete="off">
-  <button class="btn btn-ghost" id="btn-export" disabled title="Exporter les annotations en JSON">⬇ Exporter JSON</button>
-  <label class="btn-label" title="Importer un fichier JSON d'annotations">
-    ⬆ Importer JSON
+  <button class="btn btn-ghost" id="btn-export" disabled title="Sauvegarder les annotations en JSON">💾 Sauvegarder</button>
+  <label class="btn-label" title="Ouvrir un fichier JSON d'annotations">
+    📂 Ouvrir
     <input type="file" id="input-file-json" accept=".json">
   </label>
   <button class="btn btn-ghost" id="btn-help" title="Raccourcis clavier (?)">?</button>
@@ -224,6 +224,8 @@
           <tr><td><kbd>A</kbd> / <kbd>Entrée</kbd> <em>(lecture)</em></td><td>Annoter le timecode courant</td></tr>
           <tr><td><kbd>Suppr</kbd></td><td>Supprimer l'annotation courante</td></tr>
           <tr><td>Double-clic sur étiquette</td><td>Éditer l'étiquette en place</td></tr>
+          <tr><th colspan="2">Fichier</th></tr>
+          <tr><td><kbd>Ctrl</kbd>+<kbd>S</kbd></td><td>Sauvegarder</td></tr>
           <tr><th colspan="2">Divers</th></tr>
           <tr><td><kbd>?</kbd></td><td>Afficher / masquer cette aide</td></tr>
         </tbody>

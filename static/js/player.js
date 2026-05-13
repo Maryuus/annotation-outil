@@ -5,18 +5,36 @@ let videoMode = false;
 let timerVid  = null;
 
 // ─── Audio clic ───────────────────────────────────────────────────────────
-// Fichier WAV statique préchargé. On clone le nœud à chaque lecture pour
-// permettre plusieurs clics superposés sans interruption.
+// click.wav est chargé et décodé une seule fois via AudioContext.
+// Chaque clic joue depuis le buffer en mémoire — pas de réseau, fiable sur Linux.
 
 let muteAvant  = false;
-const clickAud = new Audio('/static/click.wav');
-clickAud.load();
+let _audioCtx  = null;
+let _clickBuf  = null;
+
+async function _initClickAudio() {
+  try {
+    _audioCtx       = new (window.AudioContext || window.webkitAudioContext)();
+    const resp      = await fetch('/static/click.wav');
+    const bytes     = await resp.arrayBuffer();
+    _clickBuf       = await _audioCtx.decodeAudioData(bytes);
+  } catch (e) { _audioCtx = null; }
+}
+_initClickAudio();
 
 function jouerClick() {
   if (!document.getElementById('chk-click').checked) return;
-  const c = clickAud.cloneNode();
-  c.volume = 0.7;
-  c.play().catch(() => {});
+  if (!_audioCtx || !_clickBuf) return;
+  if (_audioCtx.state === 'suspended') _audioCtx.resume();
+  try {
+    const src  = _audioCtx.createBufferSource();
+    const gain = _audioCtx.createGain();
+    src.buffer      = _clickBuf;
+    gain.gain.value = 0.7;
+    src.connect(gain);
+    gain.connect(_audioCtx.destination);
+    src.start();
+  } catch (e) {}
 }
 
 // ─── Planification des clics par setTimeout (précis à la frame) ──────────────
