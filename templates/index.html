@@ -12,20 +12,17 @@
 
 <!-- ═══════════════════ TOOLBAR ═══════════════════ -->
 <div id="toolbar">
-  <a href="/" class="btn btn-ghost" title="Retour à l'accueil">← Accueil</a>
-  <div class="vsep"></div>
+  <button id="btn-theme" title="Passer en thème clair">☀️</button>
+  <a href="/" class="btn btn-ghost" title="Retour à l'accueil">Accueil</a>
   <div id="video-info">Aucune vidéo chargée</div>
-
-  <div class="vsep"></div>
   <button class="btn btn-ghost" id="btn-reset"  disabled title="Effacer toutes les annotations">↺ Reset</button>
   <input type="text" id="input-nom-export" placeholder="Nom de l'export…" title="Nom donné à l'export JSON (facultatif)" autocomplete="off">
-  <button class="btn btn-ghost" id="btn-export" disabled title="Sauvegarder les annotations en JSON">💾 Sauvegarder</button>
-  <label class="btn-label" title="Ouvrir un fichier JSON d'annotations">
-    📂 Ouvrir
+  <button class="btn btn-ghost" id="btn-export" disabled title="Sauvegarder les annotations en JSON (Ctrl+S)">Sauvegarder</button>
+  <label class="btn-label" title="Ouvrir un fichier JSON d'annotations (Ctrl+O)">
+    Ouvrir
     <input type="file" id="input-file-json" accept=".json">
   </label>
   <button class="btn btn-ghost" id="btn-help" title="Raccourcis clavier (?)">?</button>
-  <button id="btn-theme" title="Passer en thème clair">☀️</button>
 </div>
 
 <!-- ═══════════════════ CTRLBAR ═══════════════════ -->
@@ -42,19 +39,14 @@
     <option value="2">×2</option>
   </select>
 
-  <div class="vsep"></div>
   <span class="ctrl-label">Affichage</span>
   <button class="btn btn-ghost btn-mode active" id="mode-btn-5" title="5 frames (±2)">±2</button>
   <button class="btn btn-ghost btn-mode"        id="mode-btn-3" title="3 frames (±1)">±1</button>
   <button class="btn btn-ghost btn-mode"        id="mode-btn-1" title="Plein écran">□</button>
-
-  <div class="vsep"></div>
   <span class="ctrl-label">Volume</span>
   <span class="ctrl-icon" id="vol-icon" title="Couper / rétablir le son (M)">🔊</span>
   <input type="range" id="vol-slider" min="0" max="1" step="0.05" value="1" title="Volume · M pour couper/rétablir">
   <span class="ctrl-label" id="vol-pct">100 %</span>
-
-  <div class="vsep"></div>
   <span class="ctrl-label">Clic annotations</span>
   <label class="ctrl-toggle" title="Son de clic quand on passe sur une annotation">
     <input type="checkbox" id="chk-click" checked>
@@ -118,13 +110,12 @@
 
     <div id="nav-btns">
       <button class="btn btn-accent" id="btn-play"     disabled title="Lecture / Pause (Espace · P)">▶</button>
-      <button class="btn btn-ghost"  id="btn-ann-prev" disabled title="Annotation précédente (↑)">⏮</button>
-      <button class="btn btn-ghost"  id="btn-ann-next" disabled title="Annotation suivante (↓)">⏭</button>
-      <div class="vsep" style="height:20px"></div>
       <button class="btn btn-ghost" id="btn-mn" disabled title="Reculer de N frames (Ctrl+←)">−10</button>
       <button class="btn btn-ghost" id="btn-m1" disabled title="Frame précédente (←)">◄ −1</button>
-      <input type="text" id="input-label" placeholder="Étiquette (optionnelle)" title="Appuyer sur A ou Entrée pour annoter">
-      <button class="btn btn-accent" id="btn-ann" disabled data-action="annoter" title="Annoter / Retirer (A · Entrée)">✓ Annoter</button>
+      <button class="btn btn-ghost"  id="btn-ann-prev" disabled title="Annotation précédente (↓)">⏮</button>
+      <input type="text" id="input-label" placeholder="Étiquette (optionnelle)" title="Entrée pour annoter la frame courante">
+      <button class="btn btn-accent" id="btn-ann" disabled data-action="annoter" title="Annoter / Retirer (Entrée)">✓ Annoter</button>
+      <button class="btn btn-ghost"  id="btn-ann-next" disabled title="Annotation suivante (↑)">⏭</button>
       <button class="btn btn-ghost"  id="btn-p1" disabled title="Frame suivante (→)">+1 ►</button>
       <button class="btn btn-ghost"  id="btn-pn" disabled title="Avancer de N frames (Ctrl+→)">+10</button>
     </div>
@@ -189,8 +180,7 @@
 
   <div id="ann-list">
     <div class="empty">
-      <div class="empty-icon">🎬</div>
-      Ouvrez une vidéo<br>pour commencer
+      Aucune annotation
     </div>
   </div>
 
@@ -213,21 +203,19 @@
           <tr><td><kbd>←</kbd> / <kbd>→</kbd></td><td>Frame précédente / suivante</td></tr>
           <tr><td><kbd>Ctrl</kbd>+<kbd>←/→</kbd></td><td>Saut de N frames</td></tr>
           <tr><td><kbd>Shift</kbd>+<kbd>←/→</kbd></td><td>Décaler l'annotation d'une frame</td></tr>
-          <tr><td><kbd>↑</kbd> / <kbd>↓</kbd></td><td>Annotation précédente / suivante</td></tr>
+          <tr><td><kbd>↑</kbd> / <kbd>↓</kbd></td><td>Annotation suivante / précédente</td></tr>
           <tr><th colspan="2">Lecture</th></tr>
           <tr><td><kbd>Espace</kbd> / <kbd>P</kbd></td><td>Lecture / Pause</td></tr>
-          <tr><td><kbd>Esc</kbd></td><td>Retour à l'accueil</td></tr>
-          <tr><td><kbd>M</kbd></td><td>Couper / rétablir le son</td></tr>
           <tr><td><kbd>←</kbd> / <kbd>→</kbd> <em>(lecture)</em></td><td>±1 frame</td></tr>
+          <tr><td><kbd>M</kbd></td><td>Couper / rétablir le son</td></tr>
+          <tr><td><kbd>Esc</kbd></td><td>Retour à l'accueil</td></tr>
           <tr><th colspan="2">Annotations</th></tr>
-          <tr><td><kbd>A</kbd> / <kbd>Entrée</kbd></td><td>Annoter / retirer la frame courante</td></tr>
-          <tr><td><kbd>A</kbd> / <kbd>Entrée</kbd> <em>(lecture)</em></td><td>Annoter le timecode courant</td></tr>
+          <tr><td><kbd>Entrée</kbd></td><td>Annoter / retirer</td></tr>
           <tr><td><kbd>Suppr</kbd></td><td>Supprimer l'annotation courante</td></tr>
           <tr><td>Double-clic sur étiquette</td><td>Éditer l'étiquette en place</td></tr>
           <tr><th colspan="2">Fichier</th></tr>
           <tr><td><kbd>Ctrl</kbd>+<kbd>S</kbd></td><td>Sauvegarder</td></tr>
-          <tr><th colspan="2">Divers</th></tr>
-          <tr><td><kbd>?</kbd></td><td>Afficher / masquer cette aide</td></tr>
+          <tr><td><kbd>Ctrl</kbd>+<kbd>O</kbd></td><td>Ouvrir un fichier JSON</td></tr>
         </tbody>
       </table>
     </div>

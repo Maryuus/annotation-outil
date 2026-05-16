@@ -169,8 +169,8 @@ document.getElementById('slider').addEventListener('change', function () {
 // ─── Boutons de navigation ────────────────────────────────────────────────
 
 document.getElementById('btn-play').addEventListener('click', togglePlay);
-document.getElementById('btn-ann-prev').addEventListener('click', gotoAnnotNext);
-document.getElementById('btn-ann-next').addEventListener('click', gotoAnnotPrev);
+document.getElementById('btn-ann-prev').addEventListener('click', gotoAnnotPrev);
+document.getElementById('btn-ann-next').addEventListener('click', gotoAnnotNext);
 document.getElementById('btn-m1').addEventListener('click', () => goTo(state.cur - 1));
 document.getElementById('btn-p1').addEventListener('click', () => goTo(state.cur + 1));
 document.getElementById('btn-mn').addEventListener('click', () => naviguerN(-1));

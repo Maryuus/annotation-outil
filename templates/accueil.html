@@ -11,13 +11,15 @@
 <body>
 
 <div id="acc-header">
-  <span id="acc-title">🎬 Annotateur</span>
   <button id="btn-theme" title="Passer en thème clair">☀️</button>
+  <span id="acc-title">Annotateur</span>
   <div id="acc-folder-bar">
     <span id="acc-dossier-actuel"></span>
     <button id="btn-fermer" title="Fermer le projet" style="display:none">✕</button>
-    <button id="btn-ouvrir" class="btn btn-accent">📂 Ouvrir un dossier</button>
+    <button id="btn-refresh" title="Actualiser le dossier" style="display:none">↺</button>
+    <button id="btn-ouvrir" class="btn btn-accent">Ouvrir un dossier</button>
   </div>
+  <button class="btn btn-ghost" id="btn-sync" title="Synchroniser une vidéo sur une musique">Synchronisation</button>
 </div>
 
 <div id="acc-main">
@@ -49,7 +51,80 @@
 
 </div>
 
+<!-- ═══════════════════ BANNIÈRE SYNC ═══════════════════ -->
+<div id="sync-banner" class="hidden">
+  <span id="sync-banner-text">🔄 Cliquez sur un export vidéo (annotations)…</span>
+  <button id="sync-banner-cancel" class="btn btn-ghost">✕ Annuler</button>
+</div>
+
+<!-- ═══════════════════ MODALE SYNC ═══════════════════ -->
+<div id="sync-overlay" class="hidden">
+  <div id="sync-modal">
+
+    <div id="sync-modal-head">
+      <div id="sync-modal-sels">
+        <span id="sm-sel-vid" class="sm-sel sm-sel-vid">export vidéo</span>
+        <span class="sm-arrow">→</span>
+        <span id="sm-sel-aud" class="sm-sel sm-sel-aud">export beats</span>
+      </div>
+      <button id="sync-modal-close" title="Fermer">✕</button>
+    </div>
+
+    <div id="sync-modal-body">
+      <div class="sync-mode-tabs">
+        <button class="sync-tab active" id="sm-tab-global">Mode global</button>
+        <button class="sync-tab"        id="sm-tab-precis">Mode précis</button>
+        <button class="sm-help-btn" id="sm-mode-help" title="En savoir plus">?</button>
+      </div>
+      <p class="sync-mode-desc" id="sm-mode-desc" style="display:none"></p>
+
+      <!-- Panel global -->
+      <div id="sm-panel-global">
+        <div id="sm-multiples" class="sync-multiples-grid"></div>
+        <div class="sync-info-line" id="sm-facteur"></div>
+      </div>
+
+      <!-- Panel précis -->
+      <div id="sm-panel-precis" style="display:none">
+      </div>
+
+      <!-- Option musique -->
+      <label class="sync-toggle-row" style="margin-top:10px">
+        <span class="ctrl-toggle">
+          <input type="checkbox" id="sm-chk-musique">
+          <span class="ctrl-toggle-knob"></span>
+        </span>
+        <span class="sync-toggle-label">Inclure la musique dans la vidéo exportée</span>
+      </label>
+
+      <!-- Prélude (affiché uniquement avec musique) -->
+      <div id="sm-preroll-row" style="display:none; margin-top:10px">
+        <div class="sync-info-line" style="display:flex; justify-content:space-between; align-items:baseline">
+          <span>⏮ Prélude avant le 1<sup>er</sup> beat</span>
+          <strong><span id="sm-preroll-val">0.0</span> s</strong>
+        </div>
+        <input type="range" id="sm-preroll" min="0" max="2" step="0.1" value="0"
+               style="width:100%; margin:4px 0 2px; accent-color:var(--accent)">
+      </div>
+
+      <button class="btn btn-accent sync-btn-lancer" id="sm-btn-lancer" disabled>⚡ Lancer</button>
+
+      <!-- Progression -->
+      <div id="sm-prog" style="display:none">
+        <div class="sync-progress-wrap"><div class="sync-progress-bar" id="sm-prog-bar"></div></div>
+        <div class="sync-prog-msg" id="sm-prog-msg"></div>
+      </div>
+
+      <!-- Résultat -->
+      <a class="btn btn-accent sync-btn-lancer" href="/sync/telecharger" id="sm-btn-dl"
+         style="display:none; text-decoration:none">⬇ Télécharger</a>
+    </div>
+
+  </div>
+</div>
+
 <script src="/static/js/theme.js"></script>
 <script src="/static/js/accueil.js"></script>
+<script src="/static/js/sync-accueil.js"></script>
 </body>
 </html>

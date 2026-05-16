@@ -249,16 +249,19 @@ async function chargerDureesAsync() {
 // ─── Chargement ───────────────────────────────────────────────────────────
 
 function afficherDossier(chemin) {
-  const el         = document.getElementById('acc-dossier-actuel');
-  const btnFermer  = document.getElementById('btn-fermer');
+  const el          = document.getElementById('acc-dossier-actuel');
+  const btnFermer   = document.getElementById('btn-fermer');
+  const btnRefresh  = document.getElementById('btn-refresh');
   if (chemin) {
-    el.textContent         = '📁 ' + chemin;
-    el.style.display       = 'inline';
-    btnFermer.style.display = 'inline-flex';
+    el.textContent          = chemin;
+    el.style.display        = 'inline';
+    btnFermer.style.display  = 'inline-flex';
+    btnRefresh.style.display = 'inline-flex';
   } else {
-    el.textContent         = '';
-    el.style.display       = 'none';
-    btnFermer.style.display = 'none';
+    el.textContent          = '';
+    el.style.display        = 'none';
+    btnFermer.style.display  = 'none';
+    btnRefresh.style.display = 'none';
   }
 }
 
@@ -270,6 +273,7 @@ async function fermerProjet() {
 
 async function chargerListe() {
   const data = await fetch('/projets').then(r => r.json());
+  window._projetData = data;   // partagé avec sync-accueil.js
   afficherDossier(data.dossier || null);
   renderListe(data.videos || [], data.audios || []);
 }
@@ -316,7 +320,7 @@ async function ouvrirDossier() {
     alert('Erreur réseau.');
   } finally {
     btn.disabled    = false;
-    btn.textContent = '📂 Ouvrir un dossier';
+    btn.textContent = 'Ouvrir un dossier';
   }
 }
 
@@ -338,7 +342,7 @@ async function ouvrirAnnotateur(chemin) {
 
 // ─── Ouvrir l'annotateur audio ────────────────────────────────────────────
 
-async function ouvrirAnnotateurAudio(chemin, autoDetect = false) {
+async function ouvrirAnnotateurAudio(chemin) {
   const res = await fetch('/audio/charger', {
     method:  'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -350,21 +354,22 @@ async function ouvrirAnnotateurAudio(chemin, autoDetect = false) {
     return;
   }
 
-  if (autoDetect) {
-    // Lancer la détection automatique avant de naviguer
-    const btn = document.querySelector(`.aud-card[data-chemin="${CSS.escape(chemin)}"] .aud-detect-btn`);
-    if (btn) { btn.disabled = true; btn.textContent = '⏳…'; }
-    try {
-      await fetch('/audio/beats/detecter', { method: 'POST' });
-    } catch { /* on continue quand même */ }
-  }
-
   window.location.href = '/audio-annoter';
 }
 
 async function supprimerVideo(nom) {
   if (!confirm(`Retirer "${nom}" de la liste ?`)) return;
   await fetch('/projets/supprimer-video', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ nom }),
+  });
+  chargerListe();
+}
+
+async function supprimerAudio(nom) {
+  if (!confirm(`Retirer "${nom}" de la liste ?`)) return;
+  await fetch('/projets/supprimer-audio', {
     method:  'POST',
     headers: { 'Content-Type': 'application/json' },
     body:    JSON.stringify({ nom }),
@@ -419,6 +424,18 @@ async function ouvrirExportAudio(cheminAudio, cheminExport) {
 document.getElementById('btn-ouvrir').addEventListener('click', ouvrirDossier);
 document.getElementById('btn-fermer').addEventListener('click', fermerProjet);
 document.getElementById('acc-empty').addEventListener('click', ouvrirDossier);
+
+document.getElementById('btn-refresh').addEventListener('click', async () => {
+  const btn = document.getElementById('btn-refresh');
+  btn.classList.add('spinning');
+  btn.disabled = true;
+  try {
+    await fetch('/projets/actualiser', { method: 'POST' });
+  } catch { /* réseau : on continue quand même */ }
+  await chargerListe();
+  btn.disabled = false;
+  btn.classList.remove('spinning');
+});
 
 document.getElementById('toggle-videos').addEventListener('click', () => toggleSection('videos'));
 document.getElementById('toggle-audios').addEventListener('click', () => toggleSection('audios'));
@@ -484,7 +501,7 @@ document.getElementById('audio-list').addEventListener('click', e => {
   }
   if (delBtn) {
     e.stopPropagation();
-    delBtn.closest('.vid-card').remove();
+    supprimerAudio(delBtn.dataset.nom);
     return;
   }
   if (expToggle) {
@@ -492,6 +509,7 @@ document.getElementById('audio-list').addEventListener('click', e => {
     if (!list) return;
     const ouvert = list.classList.toggle('open');
     expToggle.textContent = expToggle.textContent.replace(ouvert ? '▾' : '▴', ouvert ? '▴' : '▾');
+    sauverEtatsExports();
     return;
   }
   if (expOpen) {

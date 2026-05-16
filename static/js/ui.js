@@ -26,11 +26,7 @@ function majListe() {
   document.getElementById('ann-count').textContent = state.anns.length;
 
   if (!state.anns.length) {
-    liste.innerHTML = `
-      <div class="empty">
-        <div class="empty-icon">🎞</div>
-        Aucune annotation<br>Naviguez et appuyez sur Annoter
-      </div>`;
+    liste.innerHTML = `<div class="empty">Aucune annotation</div>`;
     return;
   }
 
@@ -186,11 +182,9 @@ function initKeyboard() {
     }
   });
 
-  // Ctrl+S → export
+  // Ctrl+S → export  |  Ctrl+O → ouvrir JSON
   document.addEventListener('keydown', e => {
-    if (e.ctrlKey && e.key === 's') {
-      e.preventDefault();
-      lancerExport();
-    }
+    if (e.ctrlKey && e.key === 's') { e.preventDefault(); lancerExport(); }
+    if (e.ctrlKey && e.key === 'o') { e.preventDefault(); document.getElementById('input-file-json').click(); }
   });
 }

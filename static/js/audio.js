@@ -123,11 +123,7 @@ function majListe() {
   document.getElementById('aud-beat-count').textContent = state.beats.length;
 
   if (!state.beats.length) {
-    liste.innerHTML = `
-      <div class="empty">
-        <div class="empty-icon">🎵</div>
-        Aucun beat<br>Appuyez sur <kbd>A</kbd> pendant la lecture
-      </div>`;
+    liste.innerHTML = `<div class="empty">Aucun beat marqué</div>`;
     return;
   }
 
@@ -310,16 +306,17 @@ function demarrerEditionInlineBeat(lbl, temps_ms) {
   input.focus();
   input.select();
 
+  let validated = false;
   async function valider() {
+    if (validated) return;
+    validated = true;
     const nouveau = input.value.trim();
-    // Remplacer d'abord dans le DOM pour éviter le double fire blur/Enter
     const span = document.createElement('span');
     span.className = 'beat-lbl';
     span.textContent = nouveau || '—';
     input.replaceWith(span);
     if (nouveau !== ancien) {
       await patchBeat(temps_ms, nouveau);
-      // Mettre à jour state local sans refetch complet
       const b = state.beats.find(x => x.temps_ms === temps_ms);
       if (b) b.etiquette = nouveau;
       majMarqueurs();
@@ -377,6 +374,50 @@ async function annoterEnLot() {
     if (data.erreur) throw new Error(data.erreur);
     await fetchAndUpdate();
     return `✓ ${data.ajoutes} ajoutés`;
+  });
+}
+
+// ─── Supprimer en lot ─────────────────────────────────────────────────────────
+
+function majDelHint() {
+  const hint   = document.getElementById('aud-del-hint');
+  const btn    = document.getElementById('aud-btn-del-lot');
+  const debutV = parseFloat(document.getElementById('aud-del-debut').value);
+  const finV   = parseFloat(document.getElementById('aud-del-fin').value);
+
+  if (!isNaN(debutV) && !isNaN(finV) && finV > debutV) {
+    const nb = state.beats.filter(b => b.temps_secondes >= debutV && b.temps_secondes <= finV).length;
+    hint.textContent   = nb > 0 ? `${nb} beat${nb > 1 ? 's' : ''} dans cette plage` : 'Aucun beat dans cette plage';
+    hint.style.color   = nb > 0 ? 'var(--danger)' : 'var(--muted)';
+    hint.style.display = 'block';
+    btn.disabled       = nb === 0;
+  } else {
+    hint.textContent   = '';
+    hint.style.display = 'none';
+    btn.disabled       = true;
+  }
+}
+
+async function supprimerBeatsLot() {
+  const debutV = parseFloat(document.getElementById('aud-del-debut').value);
+  const finV   = parseFloat(document.getElementById('aud-del-fin').value);
+
+  if (isNaN(debutV) || isNaN(finV) || finV <= debutV) {
+    alert('Veuillez renseigner un début et une fin valides.'); return;
+  }
+
+  const btn = document.getElementById('aud-btn-del-lot');
+  await btnAction(btn, '…', async () => {
+    const res  = await fetch('/audio/beats/supprimer-lot', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ debut_s: debutV, fin_s: finV }),
+    });
+    const data = await res.json();
+    if (data.erreur) throw new Error(data.erreur);
+    await fetchAndUpdate();
+    majDelHint();   // recalcule le hint (0 beat restant dans la plage)
+    return `✓ ${data.supprimes} supprimé${data.supprimes > 1 ? 's' : ''}`;
   });
 }
 
@@ -519,6 +560,21 @@ document.getElementById('aud-bulk-toggle').addEventListener('click', () => {
 document.getElementById('aud-btn-lot').addEventListener('click', annoterEnLot);
 document.getElementById('aud-btn-completer').addEventListener('click', completerMusique);
 
+// ─── Panel "supprimer en lot" ─────────────────────────────────────────────────
+
+document.getElementById('aud-del-toggle').addEventListener('click', () => {
+  const form  = document.getElementById('aud-del-form');
+  const arrow = document.getElementById('aud-del-arrow');
+  const open  = form.classList.toggle('hidden');
+  arrow.textContent = open ? '▾' : '▴';
+});
+
+['aud-del-debut', 'aud-del-fin'].forEach(id => {
+  document.getElementById(id).addEventListener('input', majDelHint);
+});
+
+document.getElementById('aud-btn-del-lot').addEventListener('click', supprimerBeatsLot);
+
 // ─── Boutons ──────────────────────────────────────────────────────────────────
 
 document.getElementById('aud-btn-mute').addEventListener('click', toggleMute);
@@ -655,6 +711,10 @@ async function initDepuisServeur() {
             'aud-btn-reset', 'aud-btn-prev-beat', 'aud-btn-next-beat',
             'aud-speed-select', 'aud-slider',
             'aud-btn-lot', 'aud-btn-completer'], true);
+    // Les champs de suppression sont actifs dès qu'un audio est chargé
+    ['aud-del-debut', 'aud-del-fin'].forEach(id => {
+      document.getElementById(id).disabled = false;
+    });
 
     await fetchAndUpdate();
     majTemps();

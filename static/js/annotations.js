@@ -205,12 +205,8 @@ async function annoterEnLot() {
   if (data.erreur) {
     alert('Erreur : ' + data.erreur);
   } else {
-    state.anns = [...state.anns, ...data.items]
-      .filter((a, i, arr) => arr.findIndex(b => b.frame === a.frame) === i)
-      .sort((a, b) => a.frame - b.frame);
+    await fetchAndUpdate();
     state.pas = data.pas;
-    majListe();
-    majMarqueurs();
     majPas();
     majImages();
     majListeActive();
