@@ -71,7 +71,7 @@ function renderCard(v) {
 
 // Rendu liste d'exports audio
 
-function renderExportsAudio(exports, cheminAudio) {
+function renderExportsAudio(exports, cheminAudio, nomAudio) {
   if (!exports.length) return '';
   const lignes = exports.map(e => `
     <div class="vid-exp-row aud-exp-row ${e.fichier ? 'exp-restaurable' : ''}"
@@ -82,6 +82,7 @@ function renderExportsAudio(exports, cheminAudio) {
       <span class="exp-bpm">${e.bpm != null ? Math.round(e.bpm) : '—'}</span>
       <span class="exp-actions">
         ${e.fichier ? '<span class="exp-open">▶ Ouvrir</span>' : ''}
+        ${e.fichier ? `<button class="exp-del-btn aud-exp-del-btn" data-nom="${escHtml(nomAudio)}" data-export="${escHtml(e.fichier)}" title="Supprimer cet export">✕</button>` : ''}
       </span>
     </div>`).join('');
   return `
@@ -120,7 +121,7 @@ function renderCardAudio(a) {
           <button class="btn-del-card aud-del-btn" data-nom="${escHtml(a.nom)}" title="Retirer de la liste">✕</button>
         </div>
       </div>
-      ${renderExportsAudio(exports, a.chemin)}
+      ${renderExportsAudio(exports, a.chemin, a.nom)}
     </div>`;
 }
 
@@ -377,6 +378,16 @@ async function supprimerAudio(nom) {
   chargerListe();
 }
 
+async function supprimerExportAudio(nomAudio, cheminExport) {
+  if (!confirm('Supprimer cet export de la liste ?')) return;
+  await fetch('/projets/supprimer-export-audio', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ nom_audio: nomAudio, chemin_export: cheminExport }),
+  });
+  chargerListe();
+}
+
 async function supprimerExport(nomVideo, cheminExport) {
   if (!confirm('Supprimer cet export de la liste ?')) return;
   await fetch('/projets/supprimer-export', {
@@ -488,12 +499,13 @@ document.getElementById('video-list').addEventListener('click', e => {
 
 // Délégation — cartes audio (même structure que les cartes vidéo, classes vid-*)
 document.getElementById('audio-list').addEventListener('click', e => {
-  const btnOuvrir    = e.target.closest('.aud-open-btn');
-  const btnSupprimer = e.target.closest('.aud-del-btn');
-  const btnToggleExp = e.target.closest('.vid-exp-toggle');
-  const btnOuvrirExp = e.target.closest('.exp-open');
-  const ligneExp     = e.target.closest('.exp-restaurable');
-  const corpsCard    = e.target.closest('.vid-card-body');
+  const btnOuvrir       = e.target.closest('.aud-open-btn');
+  const btnSupprimer    = e.target.closest('.aud-del-btn');
+  const btnSupprimerExp = e.target.closest('.aud-exp-del-btn');
+  const btnToggleExp    = e.target.closest('.vid-exp-toggle');
+  const btnOuvrirExp    = e.target.closest('.exp-open');
+  const ligneExp        = e.target.closest('.exp-restaurable');
+  const corpsCard       = e.target.closest('.vid-card-body');
 
   if (btnOuvrir) {
     ouvrirAnnotateurAudio(btnOuvrir.closest('.vid-card').dataset.chemin);
@@ -502,6 +514,11 @@ document.getElementById('audio-list').addEventListener('click', e => {
   if (btnSupprimer) {
     e.stopPropagation();
     supprimerAudio(btnSupprimer.dataset.nom);
+    return;
+  }
+  if (btnSupprimerExp) {
+    e.stopPropagation();
+    supprimerExportAudio(btnSupprimerExp.dataset.nom, btnSupprimerExp.dataset.export);
     return;
   }
   if (btnToggleExp) {

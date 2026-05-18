@@ -98,6 +98,27 @@ def supprimer_export_projet():
     return jsonify({"ok": True}), 200
 
 
+@bp_projets.route("/projets/supprimer-export-audio", methods=["POST"])
+def supprimer_export_audio_projet():
+    data          = request.get_json(silent=True) or {}
+    nom_audio     = data.get("nom_audio", "")
+    chemin_export = data.get("chemin_export", "")
+    if not nom_audio or not chemin_export:
+        return jsonify({"erreur": "champs requis manquants"}), 400
+
+    if os.path.isfile(chemin_export):
+        try:
+            os.remove(chemin_export)
+        except Exception as e:
+            return jsonify({"erreur": f"impossible de supprimer : {e}"}), 500
+
+    for a in projet_actuel["audios"]:
+        if a["nom"] == nom_audio:
+            a["exports"] = [e for e in a.get("exports", []) if e.get("fichier") != chemin_export]
+            break
+    return jsonify({"ok": True}), 200
+
+
 @bp_projets.route("/projets/fermer", methods=["POST"])
 def fermer_projet():
     projet_actuel["dossier"] = None
