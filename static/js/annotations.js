@@ -1,5 +1,3 @@
-// ─── Mise à jour complète après toute modification ────────────────────────
-
 async function fetchAndUpdate() {
   const data = await fetchAnnotations();
   state.anns = data.items;
@@ -12,11 +10,11 @@ async function fetchAndUpdate() {
   majTextes();
 }
 
-// ─── Annoter / supprimer la frame courante ────────────────────────────────
+// Annoter / supprimer la frame courante
 
 async function annoter() {
   if (!state.total) return;
-  if (isAnnotee(state.cur)) {
+  if (estAnnotee(state.cur)) {
     await supprimerAnn(state.cur);
     return;
   }
@@ -28,10 +26,10 @@ async function annoter() {
 // Déplace l'annotation de la frame courante de `delta` frames.
 // Retourne la nouvelle frame, ou null si impossible.
 async function deplacerAnnotation(delta) {
-  const ann = getAnnotation(state.cur);
+  const ann = obtenirAnnotation(state.cur);
   if (!ann) return null;
   const newFrame = clamp(state.cur + delta, 0, state.total - 1);
-  if (isAnnotee(newFrame)) return null;
+  if (estAnnotee(newFrame)) return null;
   await deleteAnnotation(state.cur);
   await postAnnotation(newFrame, ann.etiquette);
   await fetchAndUpdate();
@@ -54,10 +52,10 @@ async function resetAnnotations() {
   await fetchAndUpdate();
 }
 
-// ─── Lissage des annotations (mode sélection) ────────────────────────────
+// Lissage
 
 let _lissageMode       = false;
-let _lissageDebutFrame = null;
+let _lissageFrameDebut = null;
 
 const isLissageMode = () => _lissageMode;
 
@@ -68,7 +66,7 @@ function toggleLissageMode() {
 
 function enterLissageMode() {
   _lissageMode       = true;
-  _lissageDebutFrame = null;
+  _lissageFrameDebut = null;
   document.getElementById('ann-list').classList.add('lissage-select');
   document.getElementById('lissage-hint-bar').classList.add('visible');
   document.getElementById('lissage-hint').textContent = 'Cliquez sur l\'annotation de début…';
@@ -77,7 +75,7 @@ function enterLissageMode() {
 
 function exitLissageMode() {
   _lissageMode       = false;
-  _lissageDebutFrame = null;
+  _lissageFrameDebut = null;
   document.getElementById('ann-list').classList.remove('lissage-select');
   document.getElementById('lissage-hint-bar').classList.remove('visible');
   document.getElementById('lissage-hint').textContent = '';
@@ -88,17 +86,17 @@ function exitLissageMode() {
 async function handleLissageClick(frame) {
   if (!_lissageMode) return;
 
-  if (_lissageDebutFrame === null) {
-    _lissageDebutFrame = frame;
+  if (_lissageFrameDebut === null) {
+    _lissageFrameDebut = frame;
     document.getElementById('a' + frame)?.classList.add('lissage-debut');
     document.getElementById('lissage-hint').textContent = 'Cliquez sur l\'annotation de fin…';
     return;
   }
 
-  if (frame === _lissageDebutFrame) return;
+  if (frame === _lissageFrameDebut) return;
 
-  const debut = Math.min(_lissageDebutFrame, frame);
-  const fin   = Math.max(_lissageDebutFrame, frame);
+  const debut = Math.min(_lissageFrameDebut, frame);
+  const fin   = Math.max(_lissageFrameDebut, frame);
 
   exitLissageMode();
 
@@ -107,39 +105,31 @@ async function handleLissageClick(frame) {
   btn.textContent = 'Lissage…';
 
   const largeur = parseInt(document.getElementById('lissage-largeur').value, 10) || 1;
-  const data = await postLissage(debut, fin, largeur);
+  const data = await posterLissage(debut, fin, largeur);
 
   if (data.erreur) {
     alert('Erreur : ' + data.erreur);
   } else {
-    const horsRange = state.anns.filter(a => a.frame < debut || a.frame > fin);
-    state.anns = [...horsRange, ...data.items].sort((a, b) => a.frame - b.frame);
-    state.pas  = data.pas;
-    majListe();
-    majMarqueurs();
-    majPas();
-    majImages();
-    majListeActive();
-    majTextes();
+    await fetchAndUpdate();
   }
 
   btn.disabled    = false;
   btn.textContent = '✂ Lisser';
 }
 
-// ─── Annotation en lot ────────────────────────────────────────────────────
+// Annotation en lot
 
-function isBulkTimeMode() {
+function estModeSeconde() {
   return document.getElementById('bulk-mode-chk').checked;
 }
 
-function calcBulkFramesPreview() {
+function calculerApercuBulk() {
   const debut  = parseFloat(document.getElementById('bulk-start').value);
   const fin    = parseFloat(document.getElementById('bulk-end').value);
   const nombre = parseInt(document.getElementById('bulk-count').value, 10);
   if (isNaN(debut) || isNaN(fin) || isNaN(nombre) || nombre < 1) return null;
 
-  const timeMode = isBulkTimeMode();
+  const timeMode = estModeSeconde();
   let df = timeMode ? Math.round(debut * state.fps) : Math.round(debut);
   let ff = timeMode ? Math.round(fin   * state.fps) : Math.round(fin);
   df = Math.max(0, Math.min(state.total - 1, df));
@@ -151,7 +141,7 @@ function calcBulkFramesPreview() {
   );
 }
 
-function tc(frame) {
+function formaterTc(frame) {
   const s = frame / state.fps;
   const m = Math.floor(s / 60);
   return `${String(m).padStart(2, '0')}:${(s % 60).toFixed(2).padStart(5, '0')}`;
@@ -159,16 +149,16 @@ function tc(frame) {
 
 function majBulkHint() {
   const hint   = document.getElementById('bulk-hint');
-  const frames = calcBulkFramesPreview();
+  const frames = calculerApercuBulk();
   if (!frames || frames.length === 0) { hint.textContent = ''; return; }
-  const fmt = f => `#${f} (${tc(f)})`;
+  const fmt = f => `#${f} (${formaterTc(f)})`;
   hint.textContent = frames.length <= 3
     ? frames.map(fmt).join('  ·  ')
     : `${fmt(frames[0])}  …  ${fmt(frames[frames.length - 1])}  (${frames.length})`;
 }
 
-function onBulkModeChange() {
-  const timeMode = isBulkTimeMode();
+function surChangementModeBulk() {
+  const timeMode = estModeSeconde();
   document.getElementById('bulk-panel').classList.toggle('time-mode', timeMode);
   const startEl = document.getElementById('bulk-start');
   const endEl   = document.getElementById('bulk-end');
@@ -194,13 +184,13 @@ async function annoterEnLot() {
   }
 
   const etiquette = document.getElementById('bulk-label').value.trim();
-  const mode      = isBulkTimeMode() ? 'secondes' : 'frame';
+  const mode      = estModeSeconde() ? 'secondes' : 'frame';
   const btn       = document.getElementById('bulk-btn');
 
   btn.disabled    = true;
   btn.textContent = 'Génération…';
 
-  const data = await postAnnotationLot(debut, fin, nombre, etiquette, mode);
+  const data = await posterAnnotationsLot(debut, fin, nombre, etiquette, mode);
 
   if (data.erreur) {
     alert('Erreur : ' + data.erreur);

@@ -1,4 +1,4 @@
-// ─── Synchronisation depuis l'accueil ────────────────────────────────────────
+// Synchronisation depuis l'accueil
 // Mode sélection : l'utilisateur clique sur un export vidéo puis un export beats,
 // une petite modale s'ouvre ensuite pour configurer et lancer le rendu.
 
@@ -13,7 +13,7 @@ const syncAcc = {
   maxPreroll:  0,         // max disponible calculé côté serveur
 };
 
-// ─── Entrée / sortie du mode ──────────────────────────────────────────────────
+// Entrée / sortie du mode
 
 function entrerModeSync() {
   syncAcc.actif       = true;
@@ -47,7 +47,7 @@ function majBanniere() {
   }
 }
 
-// ─── Sélection d'un export vidéo ─────────────────────────────────────────────
+// Sélection d'un export vidéo
 
 function selectionnerExportVid(row) {
   if (syncAcc.etape !== 'video') return;
@@ -57,26 +57,26 @@ function selectionnerExportVid(row) {
   const cheminExport = row.dataset.export;
   const projet       = window._projetData || {};
 
-  let exportInfo = null;
+  let infoExport = null;
   for (const v of (projet.videos || [])) {
     if (v.chemin !== cheminVideo) continue;
-    exportInfo = (v.exports || []).find(e => e.fichier === cheminExport);
-    if (exportInfo) { exportInfo = { ...exportInfo, chemin_video: cheminVideo, nom_video: v.nom }; break; }
+    infoExport = (v.exports || []).find(e => e.fichier === cheminExport);
+    if (infoExport) { infoExport = { ...infoExport, chemin_video: cheminVideo, nom_video: v.nom }; break; }
   }
-  if (!exportInfo) {
-    exportInfo = { chemin_video: cheminVideo, chemin_export: cheminExport };
+  if (!infoExport) {
+    infoExport = { chemin_video: cheminVideo, chemin_export: cheminExport };
   }
 
   // Marquer visuellement
   document.querySelectorAll('.sync-sel-row').forEach(el => el.classList.remove('sync-sel-row'));
   row.classList.add('sync-sel-row');
 
-  syncAcc.exportVid = { ...exportInfo, chemin_export: cheminExport };
+  syncAcc.exportVid = { ...infoExport, chemin_export: cheminExport };
   syncAcc.etape     = 'beats';
   majBanniere();
 }
 
-// ─── Sélection d'un export beats ─────────────────────────────────────────────
+// Sélection d'un export beats
 
 function selectionnerExportBeats(row) {
   if (syncAcc.etape !== 'beats') return;
@@ -85,23 +85,23 @@ function selectionnerExportBeats(row) {
   const cheminExport = row.dataset.export;
   const projet       = window._projetData || {};
 
-  let exportInfo = null;
+  let infoExport = null;
   for (const a of (projet.audios || [])) {
     if (a.chemin !== cheminAudio) continue;
-    exportInfo = (a.exports || []).find(e => e.fichier === cheminExport);
-    if (exportInfo) { exportInfo = { ...exportInfo, chemin_audio: cheminAudio, nom_audio: a.nom }; break; }
+    infoExport = (a.exports || []).find(e => e.fichier === cheminExport);
+    if (infoExport) { infoExport = { ...infoExport, chemin_audio: cheminAudio, nom_audio: a.nom }; break; }
   }
-  if (!exportInfo) {
-    exportInfo = { chemin_audio: cheminAudio, chemin_export: cheminExport };
+  if (!infoExport) {
+    infoExport = { chemin_audio: cheminAudio, chemin_export: cheminExport };
   }
 
   row.classList.add('sync-sel-row');
-  syncAcc.exportBeats = { ...exportInfo, chemin_export: cheminExport };
+  syncAcc.exportBeats = { ...infoExport, chemin_export: cheminExport };
 
   ouvrirModal();
 }
 
-// ─── Modale ───────────────────────────────────────────────────────────────────
+// Modale
 
 function ouvrirModal() {
   // Labels sélection
@@ -125,10 +125,10 @@ function ouvrirModal() {
   document.getElementById('sync-overlay').classList.remove('hidden');
 
   // Charger les infos de prélude en arrière-plan
-  _fetchPreroll();
+  _chargerPreroll();
 }
 
-async function _fetchPreroll() {
+async function _chargerPreroll() {
   try {
     const annsPath  = encodeURIComponent(syncAcc.exportVid.chemin_export);
     const beatsPath = encodeURIComponent(syncAcc.exportBeats.chemin_export);
@@ -154,7 +154,7 @@ async function _fetchPreroll() {
   } catch { /* réseau indisponible, on ignore silencieusement */ }
 }
 
-const _DESCS = {
+const _textesModes = {
   global: 'Vitesse uniforme : toute la vidéo est accélérée ou ralentie d\'un même facteur.',
   precis: 'Chaque annotation est calée sur le beat le plus proche, chaque segment est ajusté indépendamment.',
 };
@@ -168,13 +168,13 @@ function setModeModal(mode) {
   document.getElementById('sm-panel-precis').style.display = mode === 'precis' ? '' : 'none';
   // Met à jour le texte du "?" sans l'afficher
   const desc = document.getElementById('sm-mode-desc');
-  desc.textContent  = _DESCS[mode] || '';
+  desc.textContent  = _textesModes[mode] || '';
   desc.style.display = 'none';
   majMultiplesModal();
   majBoutonLancer();
 }
 
-// ─── Grille BPM (mode global) ─────────────────────────────────────────────────
+// Grille BPM (mode global)
 
 function arrondir(v) { return Math.round(v * 10) / 10; }
 
@@ -224,7 +224,7 @@ function majBoutonLancer() {
   document.getElementById('sm-btn-lancer').disabled = !ok;
 }
 
-// ─── Lancement ────────────────────────────────────────────────────────────────
+// Lancement
 
 async function lancerSync() {
   const btn = document.getElementById('sm-btn-lancer');
@@ -290,7 +290,7 @@ async function majProgression() {
   } catch { /* erreur réseau, on réessaie */ }
 }
 
-// ─── Interception des clics sur les exports ───────────────────────────────────
+// Interception des clics sur les exports
 
 document.getElementById('video-list').addEventListener('click', e => {
   if (!syncAcc.actif) return;
@@ -300,7 +300,6 @@ document.getElementById('video-list').addEventListener('click', e => {
   selectionnerExportVid(row);
 }, true);  // capture = avant les autres handlers
 
-// Patch du gestionnaire audio-list
 document.getElementById('audio-list').addEventListener('click', e => {
   if (!syncAcc.actif) return;
   const row = e.target.closest('.aud-exp-row.exp-restaurable');
@@ -309,7 +308,7 @@ document.getElementById('audio-list').addEventListener('click', e => {
   selectionnerExportBeats(row);
 }, true);
 
-// ─── Événements ───────────────────────────────────────────────────────────────
+// Événements
 
 document.getElementById('btn-sync').addEventListener('click', entrerModeSync);
 document.getElementById('sync-banner-cancel').addEventListener('click', sortirModeSync);
@@ -322,7 +321,7 @@ document.getElementById('sm-tab-global').addEventListener('click', () => setMode
 document.getElementById('sm-tab-precis').addEventListener('click', () => setModeModal('precis'));
 document.getElementById('sm-btn-lancer').addEventListener('click', lancerSync);
 
-// ─── Curseur prélude ─────────────────────────────────────────────────────────
+// Curseur prélude
 
 document.getElementById('sm-preroll').addEventListener('input', () => {
   const v = parseFloat(document.getElementById('sm-preroll').value);
@@ -340,4 +339,3 @@ document.getElementById('sm-mode-help').addEventListener('click', () => {
   const desc = document.getElementById('sm-mode-desc');
   desc.style.display = desc.style.display === 'none' ? '' : 'none';
 });
-

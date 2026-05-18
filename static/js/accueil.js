@@ -1,4 +1,4 @@
-// ─── Accueil — gestion des projets ────────────────────────────────────────
+// Accueil
 
 function escHtml(str) {
   return String(str)
@@ -14,7 +14,7 @@ function formatDuree(sec) {
   return `${m}:${s}`;
 }
 
-// ─── Rendu carte vidéo ────────────────────────────────────────────────────
+// Rendu carte vidéo
 
 function renderCard(v) {
   const exports = v.exports || [];
@@ -69,7 +69,7 @@ function renderCard(v) {
     </div>`;
 }
 
-// ─── Rendu liste d'exports audio (colonnes : Nom / Date / Beats / BPM) ──
+// Rendu liste d'exports audio
 
 function renderExportsAudio(exports, cheminAudio) {
   if (!exports.length) return '';
@@ -93,7 +93,7 @@ function renderExportsAudio(exports, cheminAudio) {
     </div>`;
 }
 
-// ─── Rendu carte audio ────────────────────────────────────────────────────
+// Rendu carte audio
 
 function renderCardAudio(a) {
   const exports  = a.exports || [];
@@ -124,7 +124,7 @@ function renderCardAudio(a) {
     </div>`;
 }
 
-// ─── Persistance état exports ouverts ────────────────────────────────────
+// Persistance état exports ouverts
 
 function lireEtatsExports() {
   try { return JSON.parse(localStorage.getItem('acc-exports-ouverts') || '{}'); }
@@ -151,7 +151,7 @@ function restaurerEtatsExports() {
   });
 }
 
-// ─── Persistance sections ouvertes ────────────────────────────────────────
+// Persistance sections ouvertes
 
 function lireEtatsSections() {
   try { return JSON.parse(localStorage.getItem('acc-sections') || '{"videos":true,"audios":true}'); }
@@ -185,7 +185,7 @@ function restaurerEtatsSections() {
   });
 }
 
-// ─── Rendu global ─────────────────────────────────────────────────────────
+// Rendu global
 
 function renderListe(videos, audios) {
   const listV  = document.getElementById('video-list');
@@ -215,7 +215,7 @@ function renderListe(videos, audios) {
   chargerDureesAsync();   // charge les durées en arrière-plan, sans bloquer l'affichage
 }
 
-// ─── Chargement async des durées audio ───────────────────────────────────
+// Chargement async des durées audio
 
 async function chargerDureesAsync() {
   const cartes = [...document.querySelectorAll('[data-loading-duree]')];
@@ -246,7 +246,7 @@ async function chargerDureesAsync() {
   }
 }
 
-// ─── Chargement ───────────────────────────────────────────────────────────
+// Chargement
 
 function afficherDossier(chemin) {
   const el          = document.getElementById('acc-dossier-actuel');
@@ -278,7 +278,7 @@ async function chargerListe() {
   renderListe(data.videos || [], data.audios || []);
 }
 
-// ─── Ouvrir un dossier ────────────────────────────────────────────────────
+// Ouvrir un dossier
 
 async function ouvrirDossier() {
   const btn = document.getElementById('btn-ouvrir');
@@ -324,7 +324,7 @@ async function ouvrirDossier() {
   }
 }
 
-// ─── Ouvrir l'annotateur vidéo ────────────────────────────────────────────
+// Ouvrir l'annotateur vidéo
 
 async function ouvrirAnnotateur(chemin) {
   const res = await fetch('/video/charger', {
@@ -340,7 +340,7 @@ async function ouvrirAnnotateur(chemin) {
   }
 }
 
-// ─── Ouvrir l'annotateur audio ────────────────────────────────────────────
+// Ouvrir l'annotateur audio
 
 async function ouvrirAnnotateurAudio(chemin) {
   const res = await fetch('/audio/charger', {
@@ -419,7 +419,7 @@ async function ouvrirExportAudio(cheminAudio, cheminExport) {
   }
 }
 
-// ─── Événements ───────────────────────────────────────────────────────────
+// Événements
 
 document.getElementById('btn-ouvrir').addEventListener('click', ouvrirDossier);
 document.getElementById('btn-fermer').addEventListener('click', fermerProjet);
@@ -442,90 +442,90 @@ document.getElementById('toggle-audios').addEventListener('click', () => toggleS
 
 // Délégation — cartes vidéo
 document.getElementById('video-list').addEventListener('click', e => {
-  const vidDel    = e.target.closest('.vid-del-btn');
-  const expDel    = e.target.closest('.exp-del-btn');
-  const expOpen   = e.target.closest('.exp-open');
-  const expToggle = e.target.closest('.vid-exp-toggle');
-  const expRow    = e.target.closest('.exp-restaurable');
-  const cardBody  = e.target.closest('.vid-card-body');
-  const openBtn   = e.target.closest('.vid-open-btn');
+  const btnSupprimerVid = e.target.closest('.vid-del-btn');
+  const btnSupprimerExp = e.target.closest('.exp-del-btn');
+  const btnOuvrirExp    = e.target.closest('.exp-open');
+  const btnToggleExp    = e.target.closest('.vid-exp-toggle');
+  const ligneExp        = e.target.closest('.exp-restaurable');
+  const corpsCard       = e.target.closest('.vid-card-body');
+  const btnOuvrir       = e.target.closest('.vid-open-btn');
 
-  if (openBtn) {
-    ouvrirAnnotateur(openBtn.closest('.vid-card').dataset.chemin);
+  if (btnOuvrir) {
+    ouvrirAnnotateur(btnOuvrir.closest('.vid-card').dataset.chemin);
     return;
   }
-  if (vidDel) {
+  if (btnSupprimerVid) {
     e.stopPropagation();
-    supprimerVideo(vidDel.dataset.nom);
+    supprimerVideo(btnSupprimerVid.dataset.nom);
     return;
   }
-  if (expDel) {
+  if (btnSupprimerExp) {
     e.stopPropagation();
-    supprimerExport(expDel.dataset.nom, expDel.dataset.export);
+    supprimerExport(btnSupprimerExp.dataset.nom, btnSupprimerExp.dataset.export);
     return;
   }
-  if (expOpen) {
-    const row = expOpen.closest('.exp-restaurable');
+  if (btnOuvrirExp) {
+    const row = btnOuvrirExp.closest('.exp-restaurable');
     if (row) ouvrirExport(row.dataset.video, row.dataset.export);
     return;
   }
-  if (expToggle) {
-    const list = expToggle.closest('.vid-card').querySelector('.vid-exp-list');
+  if (btnToggleExp) {
+    const list = btnToggleExp.closest('.vid-card').querySelector('.vid-exp-list');
     if (!list) return;
     const ouvert = list.classList.toggle('open');
-    expToggle.textContent = expToggle.textContent.replace(ouvert ? '▾' : '▴', ouvert ? '▴' : '▾');
+    btnToggleExp.textContent = btnToggleExp.textContent.replace(ouvert ? '▾' : '▴', ouvert ? '▴' : '▾');
     sauverEtatsExports();
     return;
   }
-  if (expRow && !e.target.closest('.exp-actions')) {
-    ouvrirExport(expRow.dataset.video, expRow.dataset.export);
+  if (ligneExp && !e.target.closest('.exp-actions')) {
+    ouvrirExport(ligneExp.dataset.video, ligneExp.dataset.export);
     return;
   }
-  if (cardBody && !e.target.closest('.vid-actions')) {
-    ouvrirAnnotateur(cardBody.closest('.vid-card').dataset.chemin);
+  if (corpsCard && !e.target.closest('.vid-actions')) {
+    ouvrirAnnotateur(corpsCard.closest('.vid-card').dataset.chemin);
   }
 });
 
 // Délégation — cartes audio (même structure que les cartes vidéo, classes vid-*)
 document.getElementById('audio-list').addEventListener('click', e => {
-  const openBtn   = e.target.closest('.aud-open-btn');
-  const delBtn    = e.target.closest('.aud-del-btn');
-  const expToggle = e.target.closest('.vid-exp-toggle');
-  const expOpen   = e.target.closest('.exp-open');
-  const expRow    = e.target.closest('.exp-restaurable');
-  const cardBody  = e.target.closest('.vid-card-body');
+  const btnOuvrir    = e.target.closest('.aud-open-btn');
+  const btnSupprimer = e.target.closest('.aud-del-btn');
+  const btnToggleExp = e.target.closest('.vid-exp-toggle');
+  const btnOuvrirExp = e.target.closest('.exp-open');
+  const ligneExp     = e.target.closest('.exp-restaurable');
+  const corpsCard    = e.target.closest('.vid-card-body');
 
-  if (openBtn) {
-    ouvrirAnnotateurAudio(openBtn.closest('.vid-card').dataset.chemin, false);
+  if (btnOuvrir) {
+    ouvrirAnnotateurAudio(btnOuvrir.closest('.vid-card').dataset.chemin);
     return;
   }
-  if (delBtn) {
+  if (btnSupprimer) {
     e.stopPropagation();
-    supprimerAudio(delBtn.dataset.nom);
+    supprimerAudio(btnSupprimer.dataset.nom);
     return;
   }
-  if (expToggle) {
-    const list = expToggle.closest('.vid-card').querySelector('.vid-exp-list');
+  if (btnToggleExp) {
+    const list = btnToggleExp.closest('.vid-card').querySelector('.vid-exp-list');
     if (!list) return;
     const ouvert = list.classList.toggle('open');
-    expToggle.textContent = expToggle.textContent.replace(ouvert ? '▾' : '▴', ouvert ? '▴' : '▾');
+    btnToggleExp.textContent = btnToggleExp.textContent.replace(ouvert ? '▾' : '▴', ouvert ? '▴' : '▾');
     sauverEtatsExports();
     return;
   }
-  if (expOpen) {
-    const row = expOpen.closest('.exp-restaurable');
+  if (btnOuvrirExp) {
+    const row = btnOuvrirExp.closest('.exp-restaurable');
     if (row) ouvrirExportAudio(row.dataset.audio, row.dataset.export);
     return;
   }
-  if (expRow && !e.target.closest('.exp-actions')) {
-    ouvrirExportAudio(expRow.dataset.audio, expRow.dataset.export);
+  if (ligneExp && !e.target.closest('.exp-actions')) {
+    ouvrirExportAudio(ligneExp.dataset.audio, ligneExp.dataset.export);
     return;
   }
-  if (cardBody && !e.target.closest('.vid-actions')) {
-    ouvrirAnnotateurAudio(cardBody.closest('.vid-card').dataset.chemin, false);
+  if (corpsCard && !e.target.closest('.vid-actions')) {
+    ouvrirAnnotateurAudio(corpsCard.closest('.vid-card').dataset.chemin);
   }
 });
 
-// ─── Init ─────────────────────────────────────────────────────────────────
+// Init
 
 chargerListe();

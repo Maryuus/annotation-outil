@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Annotateur de frames</title>
+  <title>Annotateur</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/css/style.css">
@@ -44,8 +44,8 @@
   <button class="btn btn-ghost btn-mode"        id="mode-btn-3" title="3 frames (±1)">±1</button>
   <button class="btn btn-ghost btn-mode"        id="mode-btn-1" title="Plein écran">□</button>
   <span class="ctrl-label">Volume</span>
-  <span class="ctrl-icon" id="vol-icon" title="Couper / rétablir le son (M)">🔊</span>
-  <input type="range" id="vol-slider" min="0" max="1" step="0.05" value="1" title="Volume · M pour couper/rétablir">
+  <button class="btn btn-ghost" id="vol-icon" title="Couper / rétablir le son (M)">🔊</button>
+  <input type="range" id="vol-slider" min="0" max="100" step="1" value="100" title="Volume · M pour couper/rétablir">
   <span class="ctrl-label" id="vol-pct">100 %</span>
   <span class="ctrl-label">Clic annotations</span>
   <label class="ctrl-toggle" title="Son de clic quand on passe sur une annotation">

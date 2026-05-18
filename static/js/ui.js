@@ -1,17 +1,17 @@
-// ─── Affichage ────────────────────────────────────────────────────────────
+// Affichage
 
 function majTextes() {
   const s = state.cur / state.fps;
   document.getElementById('lbl-frame').textContent    = `${state.cur} / ${state.total - 1}`;
   document.getElementById('lbl-time').textContent     = `${s.toFixed(3)} s`;
   document.getElementById('label-center').textContent = `Frame ${state.cur} / ${state.total - 1}`;
-  document.getElementById('badge-on').style.display   = isAnnotee(state.cur) ? 'inline' : 'none';
+  document.getElementById('badge-on').style.display   = estAnnotee(state.cur) ? 'inline' : 'none';
   majBtnAnn();
 }
 
 function majBtnAnn() {
   const btn = document.getElementById('btn-ann');
-  const ann = getAnnotation(state.cur);
+  const ann = obtenirAnnotation(state.cur);
   if (ann) {
     btn.textContent    = '✕ Retirer';
     btn.dataset.action = 'supprimer';
@@ -66,16 +66,16 @@ function majPas() {
   document.getElementById('btn-pn').textContent = `+${state.pas}`;
 }
 
-function enable(ids, v) {
+function activerElements(ids, v) {
   ids.forEach(id => {
     const el = document.getElementById(id);
     if (el) el.disabled = !v;
   });
 }
 
-// ─── Raccourcis clavier ───────────────────────────────────────────────────
+// Raccourcis clavier
 
-function toggleHelp() {
+function basculerAide() {
   document.getElementById('help-overlay').classList.toggle('hidden');
 }
 
@@ -83,18 +83,18 @@ function initKeyboard() {
   document.addEventListener('keydown', async e => {
     if (!state.total) return;
 
-    const focus   = document.activeElement;
-    const isInput = focus && (focus.tagName === 'INPUT' || focus.tagName === 'TEXTAREA');
+    const elementFocus = document.activeElement;
+    const estChamp     = elementFocus && (elementFocus.tagName === 'INPUT' || elementFocus.tagName === 'TEXTAREA');
 
-    // ── Mode lecture vidéo ──────────────────────────────────────────────
-    if (videoMode) {
+    // Mode lecture vidéo
+    if (modeVideo) {
       switch (e.key) {
         case ' ':
           e.preventDefault(); pauseVideo(); return;
         case 'Enter':
           e.preventDefault(); annoterVideo(); return;
         case 'a': case 'A':
-          if (!isInput) { e.preventDefault(); annoterVideo(); return; }
+          if (!estChamp) { e.preventDefault(); annoterVideo(); return; }
           break;
         case 'p': case 'P':
           e.preventDefault(); pauseVideo(); return;
@@ -104,58 +104,58 @@ function initKeyboard() {
           e.preventDefault(); toggleMute(); return;
         case 'ArrowLeft':
           e.preventDefault();
-          videoEl.currentTime = Math.max(0, videoEl.currentTime - 1 / state.fps); return;
+          lecteurVideo.currentTime = Math.max(0, lecteurVideo.currentTime - 1 / state.fps); return;
         case 'ArrowRight':
           e.preventDefault();
-          videoEl.currentTime = Math.min(videoEl.duration || Infinity, videoEl.currentTime + 1 / state.fps); return;
+          lecteurVideo.currentTime = Math.min(lecteurVideo.duration || Infinity, lecteurVideo.currentTime + 1 / state.fps); return;
         case 'ArrowUp': {
           e.preventDefault();
-          const cur  = Math.round(videoEl.currentTime * state.fps);
+          const cur  = Math.round(lecteurVideo.currentTime * state.fps);
           const next = state.anns.find(a => a.frame > cur);
-          if (next) videoEl.currentTime = next.frame / state.fps;
+          if (next) lecteurVideo.currentTime = next.frame / state.fps;
           return;
         }
         case 'ArrowDown': {
           e.preventDefault();
-          const cur  = Math.round(videoEl.currentTime * state.fps);
+          const cur  = Math.round(lecteurVideo.currentTime * state.fps);
           const prev = [...state.anns].reverse().find(a => a.frame < cur);
-          if (prev) videoEl.currentTime = prev.frame / state.fps;
+          if (prev) lecteurVideo.currentTime = prev.frame / state.fps;
           return;
         }
       }
       return;
     }
 
-    // ── Mode navigation frame ───────────────────────────────────────────
-    if (!isInput) {
+    // Mode navigation frame par frame
+    if (!estChamp) {
       switch (e.key) {
 
         case 'ArrowLeft':
           e.preventDefault();
-          if (e.shiftKey && isAnnotee(state.cur)) {
+          if (e.shiftKey && estAnnotee(state.cur)) {
             const dest = await deplacerAnnotation(-1);
-            if (dest !== null) goTo(dest);
+            if (dest !== null) allerA(dest);
           } else {
-            goTo(state.cur - (e.ctrlKey ? state.pas : 1));
+            allerA(state.cur - (e.ctrlKey ? state.pas : 1));
           }
           return;
 
         case 'ArrowRight':
           e.preventDefault();
-          if (e.shiftKey && isAnnotee(state.cur)) {
+          if (e.shiftKey && estAnnotee(state.cur)) {
             const dest = await deplacerAnnotation(+1);
-            if (dest !== null) goTo(dest);
+            if (dest !== null) allerA(dest);
           } else {
-            goTo(state.cur + (e.ctrlKey ? state.pas : 1));
+            allerA(state.cur + (e.ctrlKey ? state.pas : 1));
           }
           return;
 
         case 'ArrowUp':
-          e.preventDefault(); gotoAnnotNext(); return;
+          e.preventDefault(); allerAnnotSuivante(); return;
         case 'ArrowDown':
-          e.preventDefault(); gotoAnnotPrev(); return;
+          e.preventDefault(); allerAnnotPrecedente(); return;
         case 'Delete':
-          e.preventDefault(); if (isAnnotee(state.cur)) supprimerAnn(state.cur); return;
+          e.preventDefault(); if (estAnnotee(state.cur)) supprimerAnn(state.cur); return;
         case 'Enter':
           e.preventDefault(); annoter(); return;
         case ' ':
@@ -172,12 +172,12 @@ function initKeyboard() {
           window.location.href = '/';
           return;
         case '?':
-          e.preventDefault(); toggleHelp(); return;
+          e.preventDefault(); basculerAide(); return;
       }
     }
 
     // Valider l'étiquette depuis le champ texte
-    if (focus === document.getElementById('input-label') && e.key === 'Enter') {
+    if (elementFocus === document.getElementById('input-label') && e.key === 'Enter') {
       e.preventDefault(); annoter();
     }
   });

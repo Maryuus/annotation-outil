@@ -1,4 +1,4 @@
-// ─── État de l'application ────────────────────────────────────────────────
+// État de l'application
 
 const state = {
   cur:       0,       // frame courante
@@ -9,11 +9,11 @@ const state = {
   videoSeed: '',      // cache-busting, changé à chaque nouvelle vidéo
 };
 
-const clamp        = (n, a, b) => Math.max(a, Math.min(b, n));
-const isAnnotee    = frame => state.anns.some(a => a.frame === frame);
-const getAnnotation = frame => state.anns.find(a => a.frame === frame) ?? null;
+const clamp          = (n, a, b) => Math.max(a, Math.min(b, n));
+const estAnnotee     = frame => state.anns.some(a => a.frame === frame);
+const obtenirAnnotation = frame => state.anns.find(a => a.frame === frame) ?? null;
 
-// ─── Appels API ───────────────────────────────────────────────────────────
+// Appels API
 
 async function fetchAnnotations() {
   const res = await fetch('/annotations');
@@ -37,7 +37,7 @@ async function deleteAllAnnotations() {
   return fetch('/annotations', { method: 'DELETE' });
 }
 
-async function postAnnotationLot(debut, fin, nombre, etiquette, mode) {
+async function posterAnnotationsLot(debut, fin, nombre, etiquette, mode) {
   const res = await fetch('/annotations/lot', {
     method:  'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -46,7 +46,7 @@ async function postAnnotationLot(debut, fin, nombre, etiquette, mode) {
   return res.json();
 }
 
-async function postLissage(debut, fin, largeur) {
+async function posterLissage(debut, fin, largeur) {
   const res = await fetch('/annotations/lisser', {
     method:  'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -55,7 +55,7 @@ async function postLissage(debut, fin, largeur) {
   return res.json();
 }
 
-async function importAnnotations(file) {
+async function importerAnnotations(file) {
   const fd = new FormData();
   fd.append('fichier', file);
   const res = await fetch('/annotations/importer', { method: 'POST', body: fd });
@@ -63,9 +63,9 @@ async function importAnnotations(file) {
 }
 
 
-// ─── Chargement vidéo ─────────────────────────────────────────────────────
+// Chargement vidéo
 
-function onVideoChargee(data, nom) {
+function surVideoChargee(data, nom) {
   state.videoSeed = Date.now();
 
   resetPlayer();
@@ -88,17 +88,17 @@ function onVideoChargee(data, nom) {
   slider.value    = 0;
   slider.disabled = false;
 
-  enable(['btn-play', 'speed-select', 'btn-mn', 'btn-m1',
+  activerElements(['btn-play', 'speed-select', 'btn-mn', 'btn-m1',
           'btn-ann', 'btn-p1', 'btn-pn', 'btn-export', 'btn-reset',
           'btn-ann-prev', 'btn-ann-next'], true);
 
   majListe();
   majMarqueurs();
-  goTo(0);
+  allerA(0);
 }
 
 
-// ─── Export / Import ──────────────────────────────────────────────────────
+// Export / Import
 
 async function lancerExport() {
   if (!state.total) return;
@@ -106,19 +106,19 @@ async function lancerExport() {
   const btn = document.getElementById('btn-export');
   btn.disabled = true;
 
-  const envoyer = (forcer_ecrasement = false) =>
+  const envoyerExport = (forcer_ecrasement = false) =>
     fetch('/annotations/exporter', {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({ nom, forcer_ecrasement }),
     }).then(r => r.json());
 
-  let data = await envoyer(false);
+  let data = await envoyerExport(false);
 
   if (data.conflit) {
     const ok = confirm(`Un export nommé "${nom}" existe déjà.\nVoulez-vous l'écraser ?`);
     if (!ok) { btn.disabled = false; return; }
-    data = await envoyer(true);
+    data = await envoyerExport(true);
   }
 
   if (data.erreur) {
@@ -139,14 +139,14 @@ document.getElementById('input-file-json').addEventListener('change', async func
   const file = this.files[0];
   if (!file) return;
   this.value = '';
-  const data = await importAnnotations(file);
+  const data = await importerAnnotations(file);
   if (data.erreur) { alert('Import : ' + data.erreur); return; }
   await fetchAndUpdate();
 });
 
 document.getElementById('btn-reset').addEventListener('click', resetAnnotations);
 
-// ─── Slider ───────────────────────────────────────────────────────────────
+// Slider
 
 let timerSlider = null;
 
@@ -154,8 +154,8 @@ document.getElementById('slider').addEventListener('input', function () {
   const frame = parseInt(this.value, 10);
   state.cur = frame;
   majTextes();
-  if (videoMode) {
-    videoEl.currentTime = frame / state.fps;
+  if (modeVideo) {
+    lecteurVideo.currentTime = frame / state.fps;
   } else {
     clearTimeout(timerSlider);
     timerSlider = setTimeout(majImages, 80);
@@ -163,52 +163,53 @@ document.getElementById('slider').addEventListener('input', function () {
 });
 
 document.getElementById('slider').addEventListener('change', function () {
-  if (!videoMode) goTo(parseInt(this.value, 10));
+  if (!modeVideo) allerA(parseInt(this.value, 10));
 });
 
-// ─── Boutons de navigation ────────────────────────────────────────────────
+// Boutons de navigation
 
 document.getElementById('btn-play').addEventListener('click', togglePlay);
-document.getElementById('btn-ann-prev').addEventListener('click', gotoAnnotPrev);
-document.getElementById('btn-ann-next').addEventListener('click', gotoAnnotNext);
-document.getElementById('btn-m1').addEventListener('click', () => goTo(state.cur - 1));
-document.getElementById('btn-p1').addEventListener('click', () => goTo(state.cur + 1));
+document.getElementById('btn-ann-prev').addEventListener('click', allerAnnotPrecedente);
+document.getElementById('btn-ann-next').addEventListener('click', allerAnnotSuivante);
+document.getElementById('btn-m1').addEventListener('click', () => allerA(state.cur - 1));
+document.getElementById('btn-p1').addEventListener('click', () => allerA(state.cur + 1));
 document.getElementById('btn-mn').addEventListener('click', () => naviguerN(-1));
 document.getElementById('btn-pn').addEventListener('click', () => naviguerN(+1));
 document.getElementById('btn-ann').addEventListener('click', annoter);
 
-// ─── Contrôles lecture ────────────────────────────────────────────────────
+// Contrôles lecture
 
 document.getElementById('speed-select').addEventListener('change', function () {
   changerVitesse(this.value);
 });
 
+document.getElementById('vol-icon').addEventListener('click', toggleMute);
 document.getElementById('vol-slider').addEventListener('input', function () {
   changerVolume(this.value);
 });
 
-// ─── Modes d'affichage ────────────────────────────────────────────────────
+// Modes d'affichage
 
 [1, 3, 5].forEach(n =>
   document.getElementById(`mode-btn-${n}`).addEventListener('click', () => setMode(n))
 );
 
-// ─── Vignettes latérales cliquables ───────────────────────────────────────
+// Vignettes latérales cliquables
 
 [['vig-m2', -2], ['vig-m1', -1], ['vig-p1', +1], ['vig-p2', +2]].forEach(([id, offset]) => {
   document.getElementById(id).addEventListener('click', () => naviguer(offset));
 });
 
-// ─── Marqueurs sur le slider (délégation) ─────────────────────────────────
+// Marqueurs sur le slider
 
 document.getElementById('markers').addEventListener('click', e => {
   const mk = e.target.closest('.mk');
   if (!mk) return;
   const index = parseInt(mk.dataset.index, 10);
-  if (!isNaN(index) && state.anns[index]) goTo(state.anns[index].frame);
+  if (!isNaN(index) && state.anns[index]) allerA(state.anns[index].frame);
 });
 
-// ─── Liste des annotations (délégation) ───────────────────────────────────
+// Liste des annotations
 
 document.getElementById('ann-list').addEventListener('click', e => {
   const del  = e.target.closest('.ann-del');
@@ -223,7 +224,7 @@ document.getElementById('ann-list').addEventListener('click', e => {
   if (isLissageMode()) {
     handleLissageClick(frame);
   } else if (!e.target.closest('.ann-lbl')) {
-    goTo(frame);
+    allerA(frame);
   }
 });
 
@@ -243,10 +244,10 @@ function _demarrerEditionInline(span, frame) {
   span.replaceWith(inp);
   inp.focus();
   inp.select();
-  let saved = false;
+  let valide = false;
   const save = () => {
-    if (saved) return;
-    saved = true;
+    if (valide) return;
+    valide = true;
     modifierEtiquette(frame, inp.value.trim());
   };
   inp.addEventListener('keydown', e => {
@@ -256,23 +257,23 @@ function _demarrerEditionInline(span, frame) {
   inp.addEventListener('blur', save);
 }
 
-// ─── Annotation en lot ────────────────────────────────────────────────────
+// Annotation en lot
 
 document.getElementById('bulk-toggle').addEventListener('click', () => {
   document.getElementById('bulk-panel').classList.toggle('open');
 });
 
-document.getElementById('bulk-mode-chk').addEventListener('change', onBulkModeChange);
+document.getElementById('bulk-mode-chk').addEventListener('change', surChangementModeBulk);
 document.getElementById('bulk-start').addEventListener('input', majBulkHint);
 document.getElementById('bulk-end').addEventListener('input', majBulkHint);
 document.getElementById('bulk-count').addEventListener('input', majBulkHint);
 document.getElementById('bulk-btn').addEventListener('click', annoterEnLot);
 
-// ─── Lissage ──────────────────────────────────────────────────────────────
+// Lissage
 
 document.getElementById('lissage-btn').addEventListener('click', toggleLissageMode);
 
-// ─── Aide raccourcis ──────────────────────────────────────────────────────
+// Aide raccourcis
 
 document.getElementById('btn-help').addEventListener('click', () => {
   document.getElementById('help-overlay').classList.toggle('hidden');
@@ -285,7 +286,7 @@ document.getElementById('help-overlay').addEventListener('click', e => {
     document.getElementById('help-overlay').classList.add('hidden');
 });
 
-// ─── Init ─────────────────────────────────────────────────────────────────
+// Init
 
 initKeyboard();
 
@@ -297,7 +298,7 @@ async function initDepuisServeur() {
     const data = await res.json();
     if (!data.nb_frames) return;
     const nom = (data.chemin || '').split('/').pop().split('\\').pop();
-    onVideoChargee(data, nom);
+    surVideoChargee(data, nom);
     await fetchAndUpdate();
     document.getElementById('input-nom-export').value = data.nom_export || '';
   } catch (e) {

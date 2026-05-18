@@ -1,4 +1,4 @@
-// ─── État ─────────────────────────────────────────────────────────────────────
+// État
 
 const state = {
   duree: 0,     // durée totale en secondes
@@ -7,23 +7,23 @@ const state = {
   bpm:   null,  // BPM moyen calculé
 };
 
-const audioEl = document.getElementById('audio-player');
+const lecteurAudio = document.getElementById('audio-player');
 
-// ─── Utilitaires ──────────────────────────────────────────────────────────────
+// Utilitaires
 
-function fmtTime(ms) {
+function formaterTemps(ms) {
   const totalSec = ms / 1000;
   const m = Math.floor(totalSec / 60);
   const s = (totalSec % 60).toFixed(3).padStart(6, '0');
   return `${m}:${s}`;
 }
 
-function escHtml(str) {
+function echapHtml(str) {
   return String(str)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-function calcBpm(beats) {
+function calculerBpm(beats) {
   if (beats.length < 2) return null;
   const intervals = [];
   for (let i = 1; i < beats.length; i++) {
@@ -33,18 +33,18 @@ function calcBpm(beats) {
   return Math.round(60000 / avg);
 }
 
-function curMs() {
-  return Math.round(audioEl.currentTime * 1000);
+function positionMs() {
+  return Math.round(lecteurAudio.currentTime * 1000);
 }
 
-function enable(ids, v) {
+function activerElements(ids, v) {
   ids.forEach(id => {
     const el = document.getElementById(id);
     if (el) el.disabled = !v;
   });
 }
 
-// ─── Appels API ───────────────────────────────────────────────────────────────
+// Appels API
 
 async function fetchBeats() {
   const res = await fetch('/audio/beats');
@@ -96,24 +96,24 @@ async function postCompleter() {
 async function fetchAndUpdate() {
   const data    = await fetchBeats();
   state.beats   = data.beats || [];
-  state.bpm     = calcBpm(state.beats);
+  state.bpm     = calculerBpm(state.beats);
   majListe();
   majMarqueurs();
   majBpmDisplay();
   // Replanifier les flashes si la lecture est en cours
-  if (!audioEl.paused) planifierFlashes();
+  if (!lecteurAudio.paused) planifierFlashes();
 }
 
-// ─── Affichage ────────────────────────────────────────────────────────────────
+// Affichage
 
 function majTemps() {
-  const ms = curMs();
-  document.getElementById('aud-cur-time').textContent   = fmtTime(ms);
-  document.getElementById('aud-total-time').textContent = fmtTime(state.duree * 1000);
+  const ms = positionMs();
+  document.getElementById('aud-cur-time').textContent   = formaterTemps(ms);
+  document.getElementById('aud-total-time').textContent = formaterTemps(state.duree * 1000);
 
   const slider = document.getElementById('aud-slider');
-  if (!audioEl.seeking && state.duree > 0) {
-    slider.value = Math.round((audioEl.currentTime / state.duree) * 10000);
+  if (!lecteurAudio.seeking && state.duree > 0) {
+    slider.value = Math.round((lecteurAudio.currentTime / state.duree) * 10000);
   }
   majListeActive();
 }
@@ -127,19 +127,19 @@ function majListe() {
     return;
   }
 
-  const ms = curMs();
+  const ms = positionMs();
   liste.innerHTML = state.beats.map(b => `
     <div class="beat-item ${Math.abs(b.temps_ms - ms) < 100 ? 'active' : ''}"
          id="b${b.temps_ms}" data-ms="${b.temps_ms}">
-      <span class="beat-tc">${fmtTime(b.temps_ms)}</span>
-      <span class="beat-lbl" data-ms="${b.temps_ms}" title="Double-clic pour modifier">${b.etiquette ? escHtml(b.etiquette) : '—'}</span>
+      <span class="beat-tc">${formaterTemps(b.temps_ms)}</span>
+      <span class="beat-lbl" data-ms="${b.temps_ms}" title="Double-clic pour modifier">${b.etiquette ? echapHtml(b.etiquette) : '—'}</span>
       <button class="beat-del" data-ms="${b.temps_ms}" title="Supprimer">✕</button>
     </div>
   `).join('');
 }
 
 function majListeActive() {
-  const ms = curMs();
+  const ms = positionMs();
   const proche = state.beats.reduce((best, b) =>
     !best || Math.abs(b.temps_ms - ms) < Math.abs(best.temps_ms - ms) ? b : best, null);
 
@@ -157,7 +157,7 @@ function majMarqueurs() {
     const pct   = (b.temps_ms / (state.duree * 1000)) * 100;
     const label = b.etiquette ? ` · ${b.etiquette}` : '';
     return `<div class="mk" data-index="${i}" style="left:${pct}%"
-                 title="${fmtTime(b.temps_ms)}${label}"></div>`;
+                 title="${formaterTemps(b.temps_ms)}${label}"></div>`;
   }).join('');
 }
 
@@ -174,45 +174,45 @@ function majBpmDisplay() {
   }
 }
 
-// ─── Flash d'annotation (texte) ───────────────────────────────────────────────
+// Flash d'annotation
 
-let _flashTimer = null;
+let _timerFlash = null;
 function flashAnn(ajoute) {
   const el = document.getElementById('aud-ann-flash');
-  clearTimeout(_flashTimer);
+  clearTimeout(_timerFlash);
   el.textContent = ajoute ? '✓ Beat marqué' : '✕ Beat retiré';
   el.className   = 'show';
-  _flashTimer    = setTimeout(() => { el.className = ''; }, 700);
+  _timerFlash    = setTimeout(() => { el.className = ''; }, 700);
 }
 
-// ─── Flash visuel planifié sur les beats ─────────────────────────────────────
+// Flash visuel sur les beats
 // On connaît les temps exacts de chaque beat, donc on programme un setTimeout
 // par beat plutôt que de polluer la boucle de rendu.
 
-let _beatTimers = [];
+let _timersBeat = [];
 
 function planifierFlashes() {
   annulerFlashes();
-  if (!state.beats.length || audioEl.paused) return;
+  if (!state.beats.length || lecteurAudio.paused) return;
 
-  const nowMs = audioEl.currentTime * 1000;           // position média actuelle (ms)
-  const taux  = audioEl.playbackRate || 1;             // vitesse (0.5×, 1×, 2×…)
+  const nowMs = lecteurAudio.currentTime * 1000;           // position média actuelle (ms)
+  const taux  = lecteurAudio.playbackRate || 1;             // vitesse (0.5×, 1×, 2×…)
 
   state.beats.forEach(b => {
     const mediaRestant = b.temps_ms - nowMs;           // ms de média jusqu'au beat
     if (mediaRestant <= 0) return;                     // beat déjà passé
     const realDelay = mediaRestant / taux;             // ms réels à attendre
-    _beatTimers.push(
+    _timersBeat.push(
       setTimeout(() => {
-        if (!audioEl.paused) triggerBeatFlash();
+        if (!lecteurAudio.paused) triggerBeatFlash();
       }, realDelay)
     );
   });
 }
 
 function annulerFlashes() {
-  _beatTimers.forEach(clearTimeout);
-  _beatTimers = [];
+  _timersBeat.forEach(clearTimeout);
+  _timersBeat = [];
 }
 
 function triggerBeatFlash() {
@@ -222,11 +222,11 @@ function triggerBeatFlash() {
   el.classList.add('beat-flash');
 }
 
-// ─── Helper : feedback bouton pendant une action async ────────────────────────
-// Usage : btnAction(btn, '⏳ Analyse…', async () => { ...; return '✓ Fait'; })
+// Feedback bouton pendant une action async
+// Usage : actionBouton(btn, '⏳ Analyse…', async () => { ...; return '✓ Fait'; })
 // Si fn() retourne une chaîne elle devient le label de succès (temporaire).
 // Si fn() ne retourne rien, le bouton est simplement réactivé immédiatement.
-async function btnAction(btn, labelAttente, fn, delaiRestauration = 2000) {
+async function actionBouton(btn, labelAttente, fn, delaiRestauration = 2000) {
   const labelOriginal = btn.textContent;
   btn.disabled    = true;
   btn.textContent = labelAttente;
@@ -244,11 +244,11 @@ async function btnAction(btn, labelAttente, fn, delaiRestauration = 2000) {
   }
 }
 
-// ─── Actions ─────────────────────────────────────────────────────────────────
+// Actions
 
 async function marquerBeat() {
   if (!state.duree) return;
-  const ms  = curMs();
+  const ms  = positionMs();
   const lbl = document.getElementById('aud-input-label').value.trim();
   const data = await postBeat(ms, lbl);
   flashAnn(data.action === 'ajoute');
@@ -268,7 +268,7 @@ async function resetBeats() {
 
 async function detecterAuto() {
   const btn = document.getElementById('aud-btn-detect');
-  await btnAction(btn, '⏳ Analyse…', async () => {
+  await actionBouton(btn, 'Analyse…', async () => {
     const res  = await fetch('/audio/beats/detecter', { method: 'POST' });
     const data = await res.json();
     if (data.erreur) throw new Error(data.erreur);
@@ -281,7 +281,7 @@ async function lancerExport() {
   if (!state.duree) return;
   const nom = document.getElementById('aud-input-nom-export').value.trim();
   const btn = document.getElementById('aud-btn-export');
-  await btnAction(btn, '⏳…', async () => {
+  await actionBouton(btn, '⏳…', async () => {
     const res  = await fetch('/audio/beats/exporter', {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -293,7 +293,7 @@ async function lancerExport() {
   });
 }
 
-// ─── Édition inline de l'étiquette d'un beat ─────────────────────────────────
+// Édition inline de l'étiquette
 
 function demarrerEditionInlineBeat(lbl, temps_ms) {
   const ancien = lbl.textContent === '—' ? '' : lbl.textContent;
@@ -336,7 +336,7 @@ function demarrerEditionInlineBeat(lbl, temps_ms) {
   input.addEventListener('blur', valider);
 }
 
-// ─── Ajouter en lot ───────────────────────────────────────────────────────────
+// Ajouter en lot
 
 function majBulkHint() {
   const hint   = document.getElementById('aud-bulk-hint');
@@ -365,7 +365,7 @@ async function annoterEnLot() {
   }
 
   const btn = document.getElementById('aud-btn-lot');
-  await btnAction(btn, '…', async () => {
+  await actionBouton(btn, '…', async () => {
     const data = await postBeatsLot(
       Math.round(debutV * 1000),
       Math.round(finV   * 1000),
@@ -377,7 +377,7 @@ async function annoterEnLot() {
   });
 }
 
-// ─── Supprimer en lot ─────────────────────────────────────────────────────────
+// Supprimer en lot
 
 function majDelHint() {
   const hint   = document.getElementById('aud-del-hint');
@@ -407,7 +407,7 @@ async function supprimerBeatsLot() {
   }
 
   const btn = document.getElementById('aud-btn-del-lot');
-  await btnAction(btn, '…', async () => {
+  await actionBouton(btn, '…', async () => {
     const res  = await fetch('/audio/beats/supprimer-lot', {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -421,14 +421,14 @@ async function supprimerBeatsLot() {
   });
 }
 
-// ─── Compléter la musique ─────────────────────────────────────────────────────
+// Compléter la musique
 
 async function completerMusique() {
   if (state.beats.length < 2) {
     alert('Il faut au moins 2 beats pour extrapoler l\'intervalle.'); return;
   }
   const btn = document.getElementById('aud-btn-completer');
-  await btnAction(btn, '⏳…', async () => {
+  await actionBouton(btn, '⏳…', async () => {
     const data = await postCompleter();
     if (data.erreur) throw new Error(data.erreur);
     await fetchAndUpdate();
@@ -436,35 +436,37 @@ async function completerMusique() {
   }, 2500);
 }
 
-// ─── Lecture ──────────────────────────────────────────────────────────────────
+// Lecture
 
 function togglePlay() {
-  if (audioEl.paused) audioEl.play();
-  else                audioEl.pause();
+  if (lecteurAudio.paused) lecteurAudio.play();
+  else                     lecteurAudio.pause();
 }
 
 function toggleMute() {
-  audioEl.muted = !audioEl.muted;
+  lecteurAudio.muted = !lecteurAudio.muted;
   majVolIcon();
 }
 
 function majVolIcon() {
   const btn = document.getElementById('aud-btn-mute');
   if (!btn) return;
-  if (audioEl.muted || audioEl.volume === 0) btn.textContent = '🔇';
-  else if (audioEl.volume < 0.4)             btn.textContent = '🔉';
-  else                                        btn.textContent = '🔊';
+  if (lecteurAudio.muted || lecteurAudio.volume === 0) btn.textContent = '🔇';
+  else if (lecteurAudio.volume < 0.4)                  btn.textContent = '🔉';
+  else                                                  btn.textContent = '🔊';
+  const pct = document.getElementById('aud-vol-pct');
+  if (pct) pct.textContent = Math.round(lecteurAudio.volume * 100) + ' %';
 }
 
 function setVolume(v) {
-  audioEl.volume = Math.max(0, Math.min(1, v));
-  if (audioEl.muted && audioEl.volume > 0) audioEl.muted = false;
-  document.getElementById('aud-vol-slider').value = Math.round(audioEl.volume * 100);
+  lecteurAudio.volume = Math.max(0, Math.min(1, v));
+  if (lecteurAudio.muted && lecteurAudio.volume > 0) lecteurAudio.muted = false;
+  document.getElementById('aud-vol-slider').value = Math.round(lecteurAudio.volume * 100);
   majVolIcon();
 }
 
 function majBtnPlay() {
-  document.getElementById('aud-btn-play').textContent = audioEl.paused ? '▶' : '⏸';
+  document.getElementById('aud-btn-play').textContent = lecteurAudio.paused ? '▶' : '⏸';
 }
 
 function setPlaying(v) {
@@ -475,52 +477,52 @@ function setPlaying(v) {
 
 // Navigation entre beats
 function gotoBeatNext() {
-  const ms   = curMs();
+  const ms   = positionMs();
   const next = state.beats.find(b => b.temps_ms > ms + 50);
-  if (next) audioEl.currentTime = next.temps_ms / 1000;
+  if (next) lecteurAudio.currentTime = next.temps_ms / 1000;
 }
 
 function gotoBeatPrev() {
-  const ms   = curMs();
+  const ms   = positionMs();
   const prev = [...state.beats].reverse().find(b => b.temps_ms < ms - 50);
-  if (prev) audioEl.currentTime = prev.temps_ms / 1000;
+  if (prev) lecteurAudio.currentTime = prev.temps_ms / 1000;
 }
 
-// ─── Événements audio ────────────────────────────────────────────────────────
+// Événements audio
 
-audioEl.addEventListener('timeupdate',    majTemps);
-audioEl.addEventListener('play',         () => setPlaying(true));
-audioEl.addEventListener('pause',        () => setPlaying(false));
-audioEl.addEventListener('ended',        () => setPlaying(false));
+lecteurAudio.addEventListener('timeupdate',    majTemps);
+lecteurAudio.addEventListener('play',         () => setPlaying(true));
+lecteurAudio.addEventListener('pause',        () => setPlaying(false));
+lecteurAudio.addEventListener('ended',        () => setPlaying(false));
 // Après un seek ou un changement de vitesse : replanifier depuis la nouvelle position
-audioEl.addEventListener('seeked',       () => { if (!audioEl.paused) planifierFlashes(); });
-audioEl.addEventListener('ratechange',   () => { if (!audioEl.paused) planifierFlashes(); });
+lecteurAudio.addEventListener('seeked',       () => { if (!lecteurAudio.paused) planifierFlashes(); });
+lecteurAudio.addEventListener('ratechange',   () => { if (!lecteurAudio.paused) planifierFlashes(); });
 
-audioEl.addEventListener('loadedmetadata', () => {
-  state.duree = audioEl.duration || 0;
-  document.getElementById('aud-total-time').textContent = fmtTime(state.duree * 1000);
+lecteurAudio.addEventListener('loadedmetadata', () => {
+  state.duree = lecteurAudio.duration || 0;
+  document.getElementById('aud-total-time').textContent = formaterTemps(state.duree * 1000);
   majMarqueurs();
 });
 
-// ─── Slider ───────────────────────────────────────────────────────────────────
+// Slider
 
 document.getElementById('aud-slider').addEventListener('input', function () {
   if (!state.duree) return;
   const t = (parseInt(this.value, 10) / 10000) * state.duree;
-  audioEl.currentTime = t;
+  lecteurAudio.currentTime = t;
   majTemps();
 });
 
-// ─── Marqueurs cliquables ─────────────────────────────────────────────────────
+// Marqueurs cliquables
 
 document.getElementById('aud-markers').addEventListener('click', e => {
   const mk = e.target.closest('.mk');
   if (!mk) return;
   const i = parseInt(mk.dataset.index, 10);
-  if (!isNaN(i) && state.beats[i]) audioEl.currentTime = state.beats[i].temps_ms / 1000;
+  if (!isNaN(i) && state.beats[i]) lecteurAudio.currentTime = state.beats[i].temps_ms / 1000;
 });
 
-// ─── Liste beats (délégation) ─────────────────────────────────────────────────
+// Liste beats
 
 document.getElementById('aud-beat-list').addEventListener('click', e => {
   const del  = e.target.closest('.beat-del');
@@ -531,7 +533,7 @@ document.getElementById('aud-beat-list').addEventListener('click', e => {
     return;
   }
   if (item) {
-    audioEl.currentTime = parseInt(item.dataset.ms, 10) / 1000;
+    lecteurAudio.currentTime = parseInt(item.dataset.ms, 10) / 1000;
   }
 });
 
@@ -544,7 +546,7 @@ document.getElementById('aud-beat-list').addEventListener('dblclick', e => {
   demarrerEditionInlineBeat(lbl, ms);
 });
 
-// ─── Panel "ajouter en lot" ───────────────────────────────────────────────────
+// Panel ajouter en lot
 
 document.getElementById('aud-bulk-toggle').addEventListener('click', () => {
   const form  = document.getElementById('aud-bulk-form');
@@ -560,7 +562,7 @@ document.getElementById('aud-bulk-toggle').addEventListener('click', () => {
 document.getElementById('aud-btn-lot').addEventListener('click', annoterEnLot);
 document.getElementById('aud-btn-completer').addEventListener('click', completerMusique);
 
-// ─── Panel "supprimer en lot" ─────────────────────────────────────────────────
+// Panel supprimer en lot
 
 document.getElementById('aud-del-toggle').addEventListener('click', () => {
   const form  = document.getElementById('aud-del-form');
@@ -575,7 +577,7 @@ document.getElementById('aud-del-toggle').addEventListener('click', () => {
 
 document.getElementById('aud-btn-del-lot').addEventListener('click', supprimerBeatsLot);
 
-// ─── Boutons ──────────────────────────────────────────────────────────────────
+// Boutons
 
 document.getElementById('aud-btn-mute').addEventListener('click', toggleMute);
 document.getElementById('aud-vol-slider').addEventListener('input', function () {
@@ -590,10 +592,10 @@ document.getElementById('aud-btn-reset').addEventListener('click', resetBeats);
 document.getElementById('aud-btn-prev-beat').addEventListener('click', gotoBeatPrev);
 document.getElementById('aud-btn-next-beat').addEventListener('click', gotoBeatNext);
 document.getElementById('aud-speed-select').addEventListener('change', function () {
-  audioEl.playbackRate = parseFloat(this.value);
+  lecteurAudio.playbackRate = parseFloat(this.value);
 });
 
-// ─── Raccourcis clavier ───────────────────────────────────────────────────────
+// Raccourcis clavier
 
 document.addEventListener('keydown', e => {
   // Valider depuis le champ d'étiquette
@@ -617,12 +619,12 @@ document.addEventListener('keydown', e => {
 
     case 'ArrowLeft':
       e.preventDefault();
-      audioEl.currentTime = Math.max(0, audioEl.currentTime - (e.shiftKey ? 1 : 5));
+      lecteurAudio.currentTime = Math.max(0, lecteurAudio.currentTime - (e.shiftKey ? 1 : 5));
       return;
 
     case 'ArrowRight':
       e.preventDefault();
-      audioEl.currentTime = Math.min(state.duree, audioEl.currentTime + (e.shiftKey ? 1 : 5));
+      lecteurAudio.currentTime = Math.min(state.duree, lecteurAudio.currentTime + (e.shiftKey ? 1 : 5));
       return;
 
     case 'ArrowUp':
@@ -633,7 +635,7 @@ document.addEventListener('keydown', e => {
 
     case 'Delete': {
       e.preventDefault();
-      const ms = curMs();
+      const ms = positionMs();
       const best = state.beats.reduce((b, c) =>
         !b || Math.abs(c.temps_ms - ms) < Math.abs(b.temps_ms - ms) ? c : b, null);
       if (best && Math.abs(best.temps_ms - ms) < 500) supprimerBeat(best.temps_ms);
@@ -644,10 +646,10 @@ document.addEventListener('keydown', e => {
       e.preventDefault(); toggleMute(); return;
 
     case '+': case '=':
-      e.preventDefault(); setVolume(audioEl.volume + 0.1); return;
+      e.preventDefault(); setVolume(lecteurAudio.volume + 0.1); return;
 
     case '-': case '_':
-      e.preventDefault(); setVolume(audioEl.volume - 0.1); return;
+      e.preventDefault(); setVolume(lecteurAudio.volume - 0.1); return;
 
     case 'Escape':
       e.preventDefault(); window.location.href = '/'; return;
@@ -664,7 +666,7 @@ document.addEventListener('keydown', e => {
   if (e.ctrlKey && e.key === 's') { e.preventDefault(); lancerExport(); }
 });
 
-// ─── Aide ─────────────────────────────────────────────────────────────────────
+// Aide
 
 document.getElementById('aud-btn-help').addEventListener('click', () => {
   document.getElementById('aud-help-overlay').classList.toggle('hidden');
@@ -677,9 +679,9 @@ document.getElementById('aud-help-overlay').addEventListener('click', e => {
     document.getElementById('aud-help-overlay').classList.add('hidden');
 });
 
-// ─── Init ─────────────────────────────────────────────────────────────────────
+// Init
 
-audioEl.volume = 0.8;
+lecteurAudio.volume = 0.8;
 majVolIcon();
 
 async function initDepuisServeur() {
@@ -692,22 +694,22 @@ async function initDepuisServeur() {
     state.nom   = data.nom;
     state.duree = data.duree_sec || 0;
 
-    // ── Forcer le rechargement de l'élément audio ──────────────────────────
+    // Forcer le rechargement de l'élément audio
     // Le navigateur met /audio/stream en cache : si on charge un nouveau fichier
     // sans changer l'URL, il continue de jouer l'ancien. On ajoute le nom du
     // fichier dans le paramètre `v` pour que chaque audio ait une URL unique.
-    audioEl.pause();
-    audioEl.src = `/audio/stream?v=${encodeURIComponent(data.nom)}`;
-    audioEl.load();
+    lecteurAudio.pause();
+    lecteurAudio.src = `/audio/stream?v=${encodeURIComponent(data.nom)}`;
+    lecteurAudio.load();
 
     document.getElementById('aud-info').textContent =
-      `${data.nom}  ·  ${fmtTime(state.duree * 1000)}`;
+      `${data.nom}  ·  ${formaterTemps(state.duree * 1000)}`;
     document.getElementById('aud-input-nom-export').value = data.nom_export || '';
     // Pré-remplir le champ "fin" avec la durée totale
     const finEl = document.getElementById('aud-bulk-fin');
     if (finEl && state.duree) finEl.value = state.duree.toFixed(3);
 
-    enable(['aud-btn-play', 'aud-btn-ann', 'aud-btn-detect', 'aud-btn-export',
+    activerElements(['aud-btn-play', 'aud-btn-ann', 'aud-btn-detect', 'aud-btn-export',
             'aud-btn-reset', 'aud-btn-prev-beat', 'aud-btn-next-beat',
             'aud-speed-select', 'aud-slider',
             'aud-btn-lot', 'aud-btn-completer'], true);

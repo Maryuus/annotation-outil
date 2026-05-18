@@ -1,4 +1,4 @@
-// ─── Thème clair / sombre ────────────────────────────────────────────────────
+// Thème clair / sombre
 // Ce fichier est inclus dans les 3 pages (accueil, annotateur vidéo, audio).
 // Le thème est appliqué via data-theme sur <html>, persisté dans localStorage.
 

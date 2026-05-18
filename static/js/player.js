@@ -1,127 +1,128 @@
-// ─── Lecteur vidéo ────────────────────────────────────────────────────────
+const lecteurVideo = document.getElementById('video-player');
+let modeVideo = false;
+let timerVideo  = null;
 
-const videoEl = document.getElementById('video-player');
-let videoMode = false;
-let timerVid  = null;
-
-// ─── Audio clic ───────────────────────────────────────────────────────────
+// Son de clic sur les annotations
 // click.wav est chargé et décodé une seule fois via AudioContext.
 // Chaque clic joue depuis le buffer en mémoire — pas de réseau, fiable sur Linux.
 
-let muteAvant  = false;
-let _audioCtx  = null;
-let _clickBuf  = null;
+let _contexteAudio = null;
+let _bufferClick   = null;
 
-async function _initClickAudio() {
+async function _initAudioClick() {
   try {
-    _audioCtx       = new (window.AudioContext || window.webkitAudioContext)();
-    const resp      = await fetch('/static/click.wav');
-    const bytes     = await resp.arrayBuffer();
-    _clickBuf       = await _audioCtx.decodeAudioData(bytes);
-  } catch (e) { _audioCtx = null; }
+    _contexteAudio       = new (window.AudioContext || window.webkitAudioContext)();
+    const resp           = await fetch('/static/click.wav');
+    const bytes          = await resp.arrayBuffer();
+    _bufferClick         = await _contexteAudio.decodeAudioData(bytes);
+  } catch (e) { _contexteAudio = null; }
 }
-_initClickAudio();
+_initAudioClick();
 
 function jouerClick() {
   if (!document.getElementById('chk-click').checked) return;
-  if (!_audioCtx || !_clickBuf) return;
-  if (_audioCtx.state === 'suspended') _audioCtx.resume();
+  if (!_contexteAudio || !_bufferClick) return;
+  if (_contexteAudio.state === 'suspended') _contexteAudio.resume();
   try {
-    const src  = _audioCtx.createBufferSource();
-    const gain = _audioCtx.createGain();
-    src.buffer      = _clickBuf;
+    const src  = _contexteAudio.createBufferSource();
+    const gain = _contexteAudio.createGain();
+    src.buffer      = _bufferClick;
     gain.gain.value = 0.7;
     src.connect(gain);
-    gain.connect(_audioCtx.destination);
+    gain.connect(_contexteAudio.destination);
     src.start();
   } catch (e) {}
 }
 
-// ─── Planification des clics par setTimeout (précis à la frame) ──────────────
+// Planification des clics par setTimeout
 // On calcule le délai réel jusqu'à chaque frame annotée et on programme un
 // setTimeout par annotation, plutôt que de détecter dans un setInterval.
 
-let _clickTimers = [];
+let _timersClick = [];
 
 function planifierClics() {
   annulerClics();
-  if (!state.anns.length || videoEl.paused) return;
-  const nowMs = videoEl.currentTime * 1000;
-  const taux  = videoEl.playbackRate || 1;
+  if (!state.anns.length || lecteurVideo.paused) return;
+  const nowMs = lecteurVideo.currentTime * 1000;
+  const taux  = lecteurVideo.playbackRate || 1;
   state.anns.forEach(ann => {
     const frameMs      = (ann.frame / state.fps) * 1000;
     const mediaRestant = frameMs - nowMs;
     if (mediaRestant <= 0) return;
-    _clickTimers.push(setTimeout(() => {
-      if (!videoEl.paused) jouerClick();
+    _timersClick.push(setTimeout(() => {
+      if (!lecteurVideo.paused) jouerClick();
     }, mediaRestant / taux));
   });
 }
 
 function annulerClics() {
-  _clickTimers.forEach(clearTimeout);
-  _clickTimers = [];
+  _timersClick.forEach(clearTimeout);
+  _timersClick = [];
 }
 
-// ─── Volume ───────────────────────────────────────────────────────────────
+// Volume
+
+function majVolIcon() {
+  const btn = document.getElementById('vol-icon');
+  if (!btn) return;
+  if (lecteurVideo.muted || lecteurVideo.volume === 0) btn.textContent = '🔇';
+  else if (lecteurVideo.volume < 0.4)                  btn.textContent = '🔉';
+  else                                                  btn.textContent = '🔊';
+}
 
 function changerVolume(v) {
-  const vol = parseFloat(v);
-  videoEl.volume = vol;
-  document.getElementById('vol-pct').textContent  = Math.round(vol * 100) + ' %';
-  document.getElementById('vol-icon').textContent = vol === 0 ? '🔇' : vol < 0.4 ? '🔉' : '🔊';
+  const pct = parseInt(v, 10);                    // 0–100
+  lecteurVideo.volume = pct / 100;
+  if (lecteurVideo.muted && pct > 0) lecteurVideo.muted = false;
+  document.getElementById('vol-slider').value    = pct;
+  document.getElementById('vol-pct').textContent = pct + ' %';
+  majVolIcon();
 }
 
 function toggleMute() {
-  const slider = document.getElementById('vol-slider');
-  if (videoEl.volume > 0) {
-    muteAvant    = videoEl.volume;
-    slider.value = 0;
-  } else {
-    slider.value = muteAvant || 1;
-  }
-  changerVolume(slider.value);
+  lecteurVideo.muted = !lecteurVideo.muted;
+  majVolIcon();
 }
 
 function changerVitesse(v) {
-  videoEl.playbackRate = parseFloat(v);
+  lecteurVideo.playbackRate = parseFloat(v);
 }
 
-// ─── Réinitialisation (changement de vidéo) ───────────────────────────────
+// Réinitialisation
 
 function resetPlayer() {
-  clearInterval(timerVid);
-  timerVid  = null;
-  videoMode = false;
-  videoEl.pause();
-  videoEl.src = '';
-  videoEl.removeAttribute('data-loaded');
-  videoEl.load();
-  videoEl.style.display = 'none';
+  clearInterval(timerVideo);
+  timerVideo  = null;
+  modeVideo = false;
+  lecteurVideo.pause();
+  lecteurVideo.src = '';
+  lecteurVideo.removeAttribute('data-loaded');
+  lecteurVideo.load();
+  lecteurVideo.style.display = 'none';
   document.getElementById('img-0').style.display = 'block';
   document.getElementById('btn-play').textContent = '▶';
 }
 
-// ─── Lecture / Pause ──────────────────────────────────────────────────────
+// Lecture / Pause
 
 function togglePlay() {
   if (!state.total) return;
-  if (!videoMode)          enterVideoMode();
-  else if (videoEl.paused) videoEl.play();
-  else                     pauseVideo();
+  if (!modeVideo)              entrerModeVideo();
+  else if (lecteurVideo.paused) lecteurVideo.play();
+  else                          pauseVideo();
 }
 
-function enterVideoMode() {
-  videoMode = true;
-  if (!videoEl.getAttribute('data-loaded')) {
-    videoEl.src = `/video/stream?v=${state.videoSeed}`;
-    videoEl.setAttribute('data-loaded', '1');
+function entrerModeVideo() {
+  modeVideo = true;
+  if (!lecteurVideo.getAttribute('data-loaded')) {
+    lecteurVideo.src = `/video/stream?v=${state.videoSeed}`;
+    lecteurVideo.setAttribute('data-loaded', '1');
   }
-  videoEl.currentTime = state.cur / state.fps;
-  videoEl.style.display = 'block';
+  lecteurVideo.currentTime = state.cur / state.fps;
+  lecteurVideo.style.display = 'block';
   document.getElementById('img-0').style.display = 'none';
   document.getElementById('ph-center').textContent = '';
-  videoEl.play();
+  lecteurVideo.play();
   document.getElementById('btn-play').textContent = '⏸';
 
   ['img-m2', 'img-m1', 'img-p1', 'img-p2'].forEach(id => {
@@ -137,9 +138,9 @@ function enterVideoMode() {
   );
 
   // Mettre à jour le slider et les textes (sans détection de clic — géré par planifierClics)
-  timerVid = setInterval(() => {
-    if (videoEl.paused) return;
-    state.cur = Math.round(videoEl.currentTime * state.fps);
+  timerVideo = setInterval(() => {
+    if (lecteurVideo.paused) return;
+    state.cur = Math.round(lecteurVideo.currentTime * state.fps);
     document.getElementById('slider').value = state.cur;
     majTextes();
   }, 50);
@@ -150,10 +151,10 @@ function enterVideoMode() {
 
 function pauseVideo() {
   annulerClics();
-  clearInterval(timerVid);
-  const framePause = Math.round(videoEl.currentTime * state.fps);
-  videoEl.pause();
-  videoMode = false;
+  clearInterval(timerVideo);
+  const framePause = Math.round(lecteurVideo.currentTime * state.fps);
+  lecteurVideo.pause();
+  modeVideo = false;
   document.getElementById('btn-play').textContent = '▶';
   state.cur = clamp(framePause, 0, state.total - 1);
   majTextes();
@@ -162,7 +163,7 @@ function pauseVideo() {
   const img    = document.getElementById('img-0');
   const newSrc = `/frames/${state.cur}?v=${state.videoSeed}`;
   img.removeAttribute('data-src');
-  videoEl.style.display = 'none';
+  lecteurVideo.style.display = 'none';
 
   const afficherFrame = () => {
     img.style.display = 'block';
@@ -183,15 +184,15 @@ function pauseVideo() {
   mettreAJourCache();
 }
 
-videoEl.addEventListener('ended',      pauseVideo);
+lecteurVideo.addEventListener('ended',      pauseVideo);
 // Replanifier après un seek ou un changement de vitesse
-videoEl.addEventListener('seeked',     () => { if (!videoEl.paused) planifierClics(); });
-videoEl.addEventListener('ratechange', () => { if (!videoEl.paused) planifierClics(); });
+lecteurVideo.addEventListener('seeked',     () => { if (!lecteurVideo.paused) planifierClics(); });
+lecteurVideo.addEventListener('ratechange', () => { if (!lecteurVideo.paused) planifierClics(); });
 
-// ─── Annoter pendant la lecture ───────────────────────────────────────────
+// Annoter pendant la lecture
 
 async function annoterVideo() {
-  const frame = Math.round(videoEl.currentTime * state.fps);
+  const frame = Math.round(lecteurVideo.currentTime * state.fps);
   const lbl   = document.getElementById('input-label').value.trim();
   await postAnnotation(frame, lbl);
 
@@ -209,10 +210,10 @@ async function annoterVideo() {
   flash._t = setTimeout(() => flash.classList.remove('show'), 900);
 }
 
-// ─── Filmstrip ────────────────────────────────────────────────────────────
+// Filmstrip
 
-let filmstripMode  = 5;
-let mode1Observer  = null;
+let nbVignettes    = 5;
+let observateurMode1 = null;
 
 function getVideoAr() {
   const v = getComputedStyle(document.documentElement).getPropertyValue('--video-ar').trim();
@@ -221,8 +222,8 @@ function getVideoAr() {
   return (w && h) ? w / h : 16 / 9;
 }
 
-function applyMode1Width() {
-  if (filmstripMode !== 1) return;
+function appliquerLargeurMode1() {
+  if (nbVignettes !== 1) return;
   const fs   = document.getElementById('filmstrip');
   const vig  = document.getElementById('vig-0');
   const head = vig.querySelector('.vig-head');
@@ -233,20 +234,20 @@ function applyMode1Width() {
 }
 
 function setMode(n) {
-  if (filmstripMode === 1 && n !== 1) {
-    if (mode1Observer) { mode1Observer.disconnect(); mode1Observer = null; }
+  if (nbVignettes === 1 && n !== 1) {
+    if (observateurMode1) { observateurMode1.disconnect(); observateurMode1 = null; }
     document.getElementById('vig-0').style.width = '';
   }
 
-  filmstripMode = n;
+  nbVignettes = n;
   const fs = document.getElementById('filmstrip');
   fs.classList.remove('mode-3', 'mode-1');
   if (n === 3) fs.classList.add('mode-3');
   if (n === 1) {
     fs.classList.add('mode-1');
-    applyMode1Width();
-    mode1Observer = new ResizeObserver(applyMode1Width);
-    mode1Observer.observe(fs);
+    appliquerLargeurMode1();
+    observateurMode1 = new ResizeObserver(appliquerLargeurMode1);
+    observateurMode1.observe(fs);
   }
 
   [1, 3, 5].forEach(m =>
@@ -266,13 +267,13 @@ const SLOTS = [
 
 const ACTIFS = { 5: [-2, -1, 0, 1, 2], 3: [-1, 0, 1], 1: [0] };
 
-function frameUrl(idx, isThumb) {
+function urlFrame(idx, isThumb) {
   const base = `/frames/${idx}?v=${state.videoSeed}`;
   return isThumb ? base + '&size=thumb' : base;
 }
 
 function majImages() {
-  const actifs = ACTIFS[filmstripMode] ?? ACTIFS[5];
+  const actifs = ACTIFS[nbVignettes] ?? ACTIFS[5];
 
   for (const slot of SLOTS) {
     if (!actifs.includes(slot.offset)) continue;
@@ -282,7 +283,7 @@ function majImages() {
     const ph  = document.getElementById(slot.wrapId)?.querySelector('.placeholder');
 
     if (idx >= 0 && idx < state.total) {
-      const newSrc = frameUrl(idx, slot.offset !== 0);
+      const newSrc = urlFrame(idx, slot.offset !== 0);
 
       if (img.getAttribute('data-src') !== newSrc) {
         img.setAttribute('data-src', newSrc);
@@ -308,7 +309,7 @@ function majImages() {
         tmp.src = newSrc;
       }
 
-      vig.classList.toggle('annotee', isAnnotee(idx));
+      vig.classList.toggle('annotee', estAnnotee(idx));
     } else {
       img.src = '';
       img.removeAttribute('data-src');
@@ -320,20 +321,20 @@ function majImages() {
 }
 
 function resetFilmstrip() {
-  frameCache.clear();
+  cacheFrames.clear();
   for (const slot of SLOTS) {
     document.getElementById(slot.imgId).removeAttribute('data-src');
   }
 }
 
-// ─── Cache mémoire des frames ─────────────────────────────────────────────
+// Cache mémoire des frames
 
-const frameCache = new Map();
-let   timerCache = null;
+const cacheFrames = new Map();
+let   timerMajCache = null;
 
 function mettreAJourCache() {
-  clearTimeout(timerCache);
-  timerCache = setTimeout(_actualiserCache, 200);
+  clearTimeout(timerMajCache);
+  timerMajCache = setTimeout(_actualiserCache, 200);
 }
 
 function _actualiserCache() {
@@ -343,41 +344,41 @@ function _actualiserCache() {
   for (let i = Math.max(0, state.cur - 20); i <= Math.min(state.total - 1, state.cur + 20); i++)
     aGarder.add(i);
 
-  for (const [frame, img] of frameCache) {
-    if (!aGarder.has(frame)) { img.src = ''; frameCache.delete(frame); }
+  for (const [frame, img] of cacheFrames) {
+    if (!aGarder.has(frame)) { img.src = ''; cacheFrames.delete(frame); }
   }
   for (const frame of aGarder) {
-    if (!frameCache.has(frame)) {
+    if (!cacheFrames.has(frame)) {
       const img = new Image();
-      img.src = frameUrl(frame, true);
-      frameCache.set(frame, img);
+      img.src = urlFrame(frame, true);
+      cacheFrames.set(frame, img);
     }
   }
 }
 
-// ─── Navigation ───────────────────────────────────────────────────────────
+// Navigation
 
-let timerImg = null;
+let timerImage = null;
 
-function goTo(n) {
+function allerA(n) {
   if (!state.total) return;
   state.cur = clamp(n, 0, state.total - 1);
   document.getElementById('slider').value = state.cur;
   majTextes();
-  clearTimeout(timerImg);
-  timerImg = setTimeout(() => { majImages(); majListeActive(); }, 60);
+  clearTimeout(timerImage);
+  timerImage = setTimeout(() => { majImages(); majListeActive(); }, 60);
   mettreAJourCache();
 }
 
-const naviguer  = offset => goTo(state.cur + offset);
-const naviguerN = signe  => goTo(state.cur + signe * state.pas);
+const naviguer  = offset => allerA(state.cur + offset);
+const naviguerN = signe  => allerA(state.cur + signe * state.pas);
 
-function gotoAnnotPrev() {
+function allerAnnotPrecedente() {
   const prev = [...state.anns].reverse().find(a => a.frame < state.cur);
-  if (prev) goTo(prev.frame);
+  if (prev) allerA(prev.frame);
 }
 
-function gotoAnnotNext() {
+function allerAnnotSuivante() {
   const next = state.anns.find(a => a.frame > state.cur);
-  if (next) goTo(next.frame);
+  if (next) allerA(next.frame);
 }

@@ -1265,7 +1265,7 @@ body.annotateur-audio {
   font-family: var(--mono);
   font-size: 28px;
   font-weight: 500;
-  color: var(--text);
+  color: #e0e0e0;
   letter-spacing: .04em;
   text-align: center;
 }
